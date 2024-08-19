@@ -1,6 +1,12 @@
+# AREDN Wardriving
+#
+# 2024-0815 (c) Bob Iannucci
+
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
+from io import StringIO
+
 
 nodeIP = '10.5.222.97'
 username = "root"
@@ -14,8 +20,13 @@ def fetch_wifi_survey(host):
     url = 'http://%s/cgi-bin/scan' % (host,)
     html = requests.get(url, auth=(username, password))
     soup = BeautifulSoup(html.text, 'html.parser')
-    tables = pd.read_html(str(soup))
-    table = tables[0]
+    tables = pd.read_html(StringIO(str(soup)))
+    table = tables[0].transpose().to_dict()  #.to_json()
     print(table)
 
-fetch_wifi_survey(nodeIP)
+try:
+    while True:
+        fetch_wifi_survey(nodeIP)
+except KeyboardInterrupt:
+    print('\nDone')
+
