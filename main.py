@@ -36,7 +36,8 @@ class Logger():
             self.disconnect()
         
     def disconnect(self):
-        self.connection.close()
+        if self.connection is not None:
+            self.connection.close()
         self.connection = None
         self.cursor = None
         
