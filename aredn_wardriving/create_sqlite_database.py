@@ -1,0 +1,40 @@
+# Component of aredn_wardiving by Bob Iannucci
+#
+# See LICENSE.md for license information
+
+import sqlite3
+
+sqlString = 'CREATE TABLE "Readings" ( '\
+	'"Index"	INTEGER, '\
+	'"Node_Name"	TEXT, '\
+	'"Node_MAC_Address"	TEXT, '\
+	'"Node_Mode"	TEXT, '\
+	'"SSID"	TEXT, '\
+	'"SNR"	INTEGER, '\
+	'"Signal"	INTEGER, '\
+	'"Channel"	INTEGER, '\
+	'"Receiver_Latitude"	NUMERIC, '\
+	'"Receiver_Longitude"	NUMERIC, '\
+	'"Time"	INTEGER, '\
+	'"Receiver_Antenna"	TEXT, '\
+	'"Receiver_Mounting"	TEXT, '\
+	'PRIMARY KEY("Index" AUTOINCREMENT))'
+
+
+def create_sqlite_database(dbFilePath):
+    conn = None
+    try:
+        conn = sqlite3.connect(dbFilePath)
+        print(sqlite3.sqlite_version)
+    except sqlite3.Error as e:
+        print(e)
+    finally:
+        if conn:
+            conn.close()
+
+def create_sqlite_table(dbFilePath, sqlString):
+    connection_obj = sqlite3.connect(dbFilePath)
+    cursor_obj = connection_obj.cursor()
+    cursor_obj.execute(sqlString)
+    print("Table is Ready")
+    connection_obj.close()

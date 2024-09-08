@@ -1,0 +1,14 @@
+[project]
+name = "aredn-wardriving"
+version = "0.0.1"
+description = "System for collecting, organizing, and visualizing AREDN signal strength data"
+authors = ["Bob Iannucci <bob@rail.com>"]
+
+[project.dependencies]
+pynmea2 = ""
+pyserial = ""
+requests = ""
+pandas = ""
+bs4 = ""
+configparser = ""
+flask = ""
