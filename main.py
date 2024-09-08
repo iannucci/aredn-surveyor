@@ -18,19 +18,29 @@ password = "SurSocNet99"
 databasePath = '/Users/bob/Documents/AREDN/AREDN Signal Strength.db'
 gpsPort = '/dev/tty.usbmodem14201'
 gpsBaudRate = 115200
+antenna = 'Bullet'
+mounting = '4Runner'
 
 class Logger():
     def __init__ (self, databasePath):
         self.databasePath = databasePath
+        self.connection = None
+        self.cursor = None
         
     def connect(self):
-        self.connection = sqlite3.connect(self.databasePath)
-        self.cursor = self.connection.cursor()
+        try:
+            self.connection = sqlite3.connect(self.databasePath)
+            self.cursor = self.connection.cursor()
+        except Exception as e:
+            print('connect() failed: %s' % e)
+            self.disconnect()
         
     def disconnect(self):
         self.connection.close()
+        self.connection = None
+        self.cursor = None
         
-    def log(self, nodeName, nodeMAC, nodeMode, ssid, snr, signal, channel, latitude, longitude):
+    def log(self, nodeName, nodeMAC, nodeMode, ssid, snr, signal, channel, latitude, longitude, antenna, mounting):
         insertStatement = 'INSERT INTO Readings ('\
         'Node_Name, '\
         'Node_MAC_Address, '\
@@ -41,16 +51,18 @@ class Logger():
         'Channel, '\
         'Receiver_Latitude, '\
         'Receiver_Longitude, '\
+        'Receiver_Antenna, '\
+        'Receiver_Mounting, '\
         'Time ) '\
-        'VALUES ("%s", "%s", "%s", "%s", %d, %d, %d, %f, %f, %d)' % (nodeName, nodeMAC, nodeMode, ssid, snr, signal, channel, latitude, longitude, int(time.time()), )
-        self.cursor.execute(insertStatement)
-        self.connection.commit() 
-
-def test_sqlite_insert(databasePath):
-    logger = Logger(databasePath)
-    logger.connect()
-    logger.log('Test Node 2', '01:23:45:67:89:AB', 'Connected Ad-Hoc Station', 'AREDN-10-v3', 30, -60, 175, 37.0401, -122.1296)
-    logger.disconnect()  
+        'VALUES ("%s", "%s", "%s", "%s", %d, %d, %d, %f, %f, "%s", "%s", %d)' % (nodeName, nodeMAC, nodeMode, ssid, snr, signal, channel, latitude, longitude, antenna, mounting, int(time.time()), )
+        try:
+            if self.connection is None:
+                self.connect()
+            self.cursor.execute(insertStatement)
+            self.connection.commit()
+        except Exception as e:
+            print('log() failed: %s' % e)
+            self.disconnect()
 
 def fetch_wifi_survey(host):
     '''
@@ -84,15 +96,15 @@ def fetch_position():
             continue
 
 try:
-    # test_sqlite_insert(databasePath)
     logger = Logger(databasePath)
-    logger.connect()
     while True:
         readings = fetch_wifi_survey(nodeIP)
         position = fetch_position()
         for index, r in readings.items():
-            logger.log(r['Hostname'], r['MAC/BSSID'], r['802.11 Mode'], r['SSID'], r['SNR'], r['Signal'], r['Chan'], position.latitude, position.longitude)
+            logger.log(r['Hostname'], r['MAC/BSSID'], r['802.11 Mode'], r['SSID'], r['SNR'], r['Signal'], r['Chan'], position.latitude, position.longitude, antenna, mounting)
 except KeyboardInterrupt:
     logger.disconnect()
     print('\nDone')
+except Exception as e:
+    print('Abnormal termination: %s' % e)
 
