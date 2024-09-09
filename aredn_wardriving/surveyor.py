@@ -7,7 +7,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from io import StringIO
 
-class AREDNNeighborSurveyor():
+class Surveyor():
     def __init__(self, host, username, password):
         self.host = host
         self.username = username

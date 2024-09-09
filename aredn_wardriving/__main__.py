@@ -5,17 +5,17 @@
 import time
 import configparser
 import pathlib
-import aredn_wardriving.aredn_logger as Logger
-import aredn_wardriving.aredn_neighbor_surveyor as Surveyor
-import aredn_wardriving.usb_gps as GPS
+import aredn_wardriving.logger as l
+import aredn_wardriving.surveyor as s
+import aredn_wardriving.gps as g
 
 thisDir = pathlib.Path(__file__).parent.resolve()
 configPath = '%s/conf/config.ini' % thisDir
 config = configparser.ConfigParser()
 config.read(configPath)
-logger = Logger.AREDNLogger(config['database']['databasePath'])
-surveyor = Surveyor.AREDNNeighborSurveyor(config['aredn']['nodeIP'], config['aredn']['username'], config['aredn']['password'])
-gps = GPS.USBGPS(config['gps']['gpsPort'], config['gps']['gpsBaudRate'])
+logger = l.Logger(config['database']['databasePath'])
+surveyor = s.Surveyor(config['aredn']['nodeIP'], config['aredn']['username'], config['aredn']['password'])
+gps = g.GPS(config['gps']['gpsPort'], config['gps']['gpsBaudRate'])
 
 try:
     positionOfLastLogEntry = None

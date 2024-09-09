@@ -7,7 +7,7 @@ import io
 import serial
 import math
 
-class USBGPS():
+class GPS():
     def __init__(self, serialPort, baudRate):
         self.serialPort = serialPort
         self.baudRate = baudRate
