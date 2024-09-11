@@ -24,7 +24,7 @@ class MapHelper():
 
     def boundsToCenterZoom(self, bounds, mapDim):
         WORLD_DIM = { 'height': 256, 'width': 256 }
-        ZOOM_MAX = 21
+        ZOOM_MAX = 16
 
         def latRad(lat):
             sin = math.sin(lat * math.pi / 180)

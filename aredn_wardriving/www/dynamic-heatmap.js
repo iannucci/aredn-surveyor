@@ -77,6 +77,7 @@ async function refreshData() {
         zoom: zoom,
         center: center,
         mapTypeId: "satellite",
+        tilt: 0,
     });
     heatmap = new google.maps.visualization.HeatmapLayer({
         data: pointsToGoogleLatLng(points),

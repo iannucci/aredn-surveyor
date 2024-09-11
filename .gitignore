@@ -122,4 +122,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+aredn_wardriving/aredn_wardriving/conf/config.ini
+
 aredn_wardriving/conf/config.ini

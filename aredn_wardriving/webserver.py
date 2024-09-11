@@ -42,7 +42,7 @@ def heatmapData():
         mapDimPixels = { 'height': 1000, 'width': 800 }
         mapSettings = mapHelper.boundsToCenterZoom(bounds, mapDimPixels)
         serverResponse = { 'center': mapSettings['center'], 'zoom': mapSettings['zoom'] , 'points': points }
-    print('[heatmap-data] Replying to client with %s' % (serverResponse,))
+    # print('[heatmap-data] Replying to client with %s' % (serverResponse,))
     return serverResponse
 
 # css and js files, among others, are served via this rule
