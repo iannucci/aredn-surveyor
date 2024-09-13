@@ -3,6 +3,15 @@
 # See LICENSE.md for license information
 
 import sqlite3
+import pathlib
+import configparser
+
+thisDir = pathlib.Path(__file__).parent.resolve()
+configPath = '%s/conf/config.ini' % thisDir
+config = configparser.ConfigParser()
+config.read(configPath)
+
+dbPath = config['database']['databasePath']
 
 sqlString = 'CREATE TABLE "Readings" ( '\
 	'"Index"	INTEGER, '\
@@ -38,3 +47,6 @@ def create_sqlite_table(dbFilePath, sqlString):
     cursor_obj.execute(sqlString)
     print("Table is Ready")
     connection_obj.close()
+
+create_sqlite_database(dbPath)
+create_sqlite_table(dbPath, sqlString)

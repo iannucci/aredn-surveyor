@@ -9,6 +9,9 @@ moduleDir = '%s/aredn_wardriving' % projectDir
 configFilePath = '%s/conf/config.ini' % moduleDir
 sys.path.append(os.fspath(projectDir))
 
+config = c.ConfigParser()
+config.read(configFilePath)
+
 import aredn_wardriving.logger as l
 import aredn_wardriving.map_helper as m
 
@@ -50,4 +53,5 @@ def heatmapData():
 def static_content(filename):
     return send_from_directory('www', filename)
 
-app.run(host='0.0.0.0', port=81)
+# Avoid using privileged ports like 80 -- Use something above 1024 instead
+app.run(host='0.0.0.0', port=config['application']['port'])

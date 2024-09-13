@@ -1,14 +1,32 @@
+# To install from the top level of the project directory:
+#  
+#  Create aredn_wardriving/conf/config.ini and fill in the parameters
+#
+#  $ sudo apt install sqlite3
+#
+#  Copy config-example.ini to config.ini in the conf directory.
+#  Run create_sqlite_database.py to create the database and table.
+#
+#  $ python3 -m venv python-environment
+#  $ cd aredn-wardriving
+#  $ ../python-environment/bin/pip install .
+
+[tool.setuptools]
+py-modules = []
+
 [project]
 name = "aredn-wardriving"
 version = "0.0.1"
 description = "System for collecting, organizing, and visualizing AREDN signal strength data"
-authors = ["Bob Iannucci <bob@rail.com>"]
+authors = [ { name = "Bob Iannucci", email = "bob@rail.com" } ]
 
-[project.dependencies]
-pynmea2 = ""
-pyserial = ""
-requests = ""
-pandas = ""
-bs4 = ""
-configparser = ""
-flask = ""
+dependencies = [
+    "pynmea2",
+    "pyserial",
+    "requests",
+    "pandas",
+    "bs4",
+    "configparser",
+    "flask",
+    "lxml"
+]
