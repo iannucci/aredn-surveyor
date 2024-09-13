@@ -1,3 +1,7 @@
+# Project-specific
+config.ini
+/python-environment
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -122,6 +126,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-aredn_wardriving/aredn_wardriving/conf/config.ini
-
-aredn_wardriving/conf/config.ini
