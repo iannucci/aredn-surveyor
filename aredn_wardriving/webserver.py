@@ -53,5 +53,6 @@ def heatmapData():
 def static_content(filename):
     return send_from_directory('www', filename)
 
-# Avoid using privileged ports like 80 -- Use something above 1024 instead
-app.run(host='0.0.0.0', port=config['application']['port'])
+def webserver():
+    # Avoid using privileged ports like 80 -- Use something above 1024 instead
+    app.run(host='0.0.0.0', port=config['application']['port'])

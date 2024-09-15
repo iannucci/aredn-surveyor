@@ -21,8 +21,6 @@ class GPS():
                 line = sio.readline()
                 if (line[:6] == "$GPGGA"):
                     msg = pynmea2.parse(line)
-                    # print(msg.latitude)
-                    # print(msg.longitude)
                     return msg
             except serial.SerialException as e:
                 print('Device error: {}'.format(e))
@@ -30,6 +28,8 @@ class GPS():
             except pynmea2.ParseError as e:
                 print('Parse error: {}'.format(e))
                 continue
+            except e:
+                print('Other error: {}'.format(e))
             
     def distanceInMeters(self, position1, position2):
         lat1 = position1.latitude
