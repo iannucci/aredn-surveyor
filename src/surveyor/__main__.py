@@ -7,18 +7,20 @@ import time
 import configparser
 import pathlib
 import threading
-import aredn_wardriving.logger as l
-import aredn_wardriving.surveyor as s
-import aredn_wardriving.gps as g
-import aredn_wardriving.webserver as w
+from src.logger.logger import Logger
+from src.logger.collector import Collector
+from src.logger.gps import GPS
+from src.webserver.webserver import webserver
+from src.debugger.debug_log import debugLog
 
+projectDir = pathlib.Path(__file__).parent.parent.resolve()
 thisDir = pathlib.Path(__file__).parent.resolve()
-configPath = '%s/conf/config.ini' % thisDir
+configPath = '%s/config/config.ini' % projectDir
 config = configparser.ConfigParser()
 config.read(configPath)
-logger = l.Logger(config['database']['databasePath'])
-surveyor = s.Surveyor(config['aredn']['nodeIP'], config['aredn']['username'], config['aredn']['password'])
-gps = g.GPS(config['gps']['gpsPort'], config['gps']['gpsBaudRate'])
+logger = Logger(config['database']['databasePath'])
+surveyor = Collector(config['aredn']['nodeIP'], config['aredn']['username'], config['aredn']['password'])
+gps = GPS(config['gps']['gpsPort'], config['gps']['gpsBaudRate'])
 
 def logging():
     positionOfLastLogEntry = None
@@ -37,13 +39,13 @@ def logging():
 
 try:
     loggingThread = threading.Thread(target=logging, args=())
-    wesbserverThread = threading.Thread(target=w.webserver, args=())
+    wesbserverThread = threading.Thread(target=webserver, args=())
     loggingThread.start()
     wesbserverThread.start()
 except KeyboardInterrupt:
-    print('\nDone')
+    debugLog('[main] \nDone')
 except Exception as e:
-    print('Abnormal termination: %s' % e)
+    debugLog('[main] Abnormal termination: %s', (e,))
 finally:
     loggingThread.join()
     wesbserverThread.join()

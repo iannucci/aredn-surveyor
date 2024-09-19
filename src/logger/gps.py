@@ -6,6 +6,7 @@ import pynmea2
 import io
 import serial
 import math
+from src.debugger.debug_log import debugLog
 
 class GPS():
     def __init__(self, serialPort, baudRate):
@@ -23,13 +24,13 @@ class GPS():
                     msg = pynmea2.parse(line)
                     return msg
             except serial.SerialException as e:
-                print('Device error: {}'.format(e))
+                debugLog('Device error: %s', (e,))
                 break
             except pynmea2.ParseError as e:
-                print('Parse error: {}'.format(e))
+                debugLog('Parse error: %s', (e,))
                 continue
             except e:
-                print('Other error: {}'.format(e))
+                debugLog('Other error: %s', (e,))
             
     def distanceInMeters(self, position1, position2):
         lat1 = position1.latitude

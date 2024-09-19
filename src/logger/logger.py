@@ -4,6 +4,7 @@
 
 import sqlite3
 import time
+from src.debugger.debug_log import debugLog
 
 def dict_factory(cursor, row):
     d = {}
@@ -19,11 +20,11 @@ class Logger():
         
     def connect(self):
         try:
-            self.connection = sqlite3.connect(self.databasePath)
+            self.connection = sqlite3.connect(self.databasePath, check_same_thread=False)
             self.connection.row_factory = dict_factory
             self.cursor = self.connection.cursor()
         except Exception as e:
-            print('connect() failed: %s' % e)
+            debugLog('[logger] connect() failed: %s', (e,))
             self.disconnect()
         
     def disconnect(self):
@@ -53,7 +54,7 @@ class Logger():
             self.cursor.execute(insertStatement)
             self.connection.commit()
         except Exception as e:
-            print('log() failed: %s' % e)
+            debugLog('[logger] log() failed: %s', (e,))
             self.disconnect()
             
     def query(self, nodeName=None, nodeMAC=None, ssid=None, channel=None, startTime=None, stopTime=None):
@@ -92,7 +93,7 @@ class Logger():
             rows = self.cursor.fetchall()
             return rows
         except Exception as e:
-            print('log() failed: %s' % e)
+            debugLog('[logger] log() failed: %s', (e,))
             self.disconnect()
             
     def databaseToPoints(self, records):

@@ -3,6 +3,9 @@
 # See LICENSE.md for license information
 
 import math
+from src.debugger.debug_log import debugLog
+
+ZOOM_MAX = 16
 
 # Helper functions for dealing with Google Maps
 class MapHelper():
@@ -32,7 +35,10 @@ class MapHelper():
             return max(min(radX2, math.pi), -math.pi) / 2
 
         def zoom(mapPx, worldPx, fraction):
-            return math.floor(math.log(mapPx / worldPx / fraction) / math.log(2))
+            if (worldPx == 0) or (fraction == 0):
+                return  ZOOM_MAX
+            else:
+                return math.floor(math.log(mapPx / worldPx / fraction) / math.log(2))
 
         ne = bounds['ne']
         sw = bounds['sw']

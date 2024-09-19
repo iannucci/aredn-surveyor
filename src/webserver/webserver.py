@@ -5,15 +5,16 @@ import sys
 import os
 
 projectDir = pathlib.Path(__file__).parent.parent.resolve()
-moduleDir = '%s/aredn_wardriving' % projectDir
-configFilePath = '%s/conf/config.ini' % moduleDir
+moduleDir = '%s/src' % projectDir
+configFilePath = '%s/config/config.ini' % projectDir
 sys.path.append(os.fspath(projectDir))
 
 config = c.ConfigParser()
 config.read(configFilePath)
 
-import aredn_wardriving.logger as l
-import aredn_wardriving.map_helper as m
+import logger.logger as l
+import webserver.map_helper as m
+import debugger.debug_log as d
 
 app = Flask(__name__)
 
@@ -37,7 +38,7 @@ def heatmapData():
     # result = logger.query(nodeName=nodeName, nodeMAC=nodeMAC, ssid=ssid, channel=channel, startTime=startTime, stopTime=stopTime)
     result = logger.query(channel=175)
     if (result == []):
-        print('No points in the database match the query. Exiting.')
+        d.debugLog('No points in the database match the query. Exiting.')
         return None
     else:
         points = logger.databaseToPoints(result)
@@ -45,7 +46,7 @@ def heatmapData():
         mapDimPixels = { 'height': 1000, 'width': 800 }
         mapSettings = mapHelper.boundsToCenterZoom(bounds, mapDimPixels)
         serverResponse = { 'center': mapSettings['center'], 'zoom': mapSettings['zoom'] , 'points': points }
-    # print('[heatmap-data] Replying to client with %s' % (serverResponse,))
+    # d.debugLog('[heatmap-data] Replying to client with %s', (serverResponse,))
     return serverResponse
 
 # css and js files, among others, are served via this rule

@@ -6,8 +6,9 @@ import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 from io import StringIO
+from src.debugger.debug_log import debugLog
 
-class Surveyor():
+class Collector():
     def __init__(self, host, username, password):
         self.host = host
         self.username = username

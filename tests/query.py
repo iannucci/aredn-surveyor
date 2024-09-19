@@ -4,12 +4,13 @@ import sys
 import os
 
 projectDir = pathlib.Path(__file__).parent.parent.resolve()
-moduleDir = '%s/aredn_wardriving' % projectDir
-configFilePath = '%s/conf/config.ini' % moduleDir
+moduleDir = '%s/src' % projectDir
+configFilePath = '%s/config/config.ini' % moduleDir
 sys.path.append(os.fspath(projectDir))
 
-import aredn_wardriving.logger as l
-import aredn_wardriving.map_helper as m
+import src.logger.logger as l
+import src.webserver.map_helper as m
+import src.debugger.debug_log as d
 
 def queryBoundsAndZoom(mapDimPixels, nodeName=None, nodeMAC=None, ssid=None, channel=None, startTime=None, stopTime=None):
     config = c.ConfigParser()
@@ -17,14 +18,12 @@ def queryBoundsAndZoom(mapDimPixels, nodeName=None, nodeMAC=None, ssid=None, cha
     logger = l.Logger(config['database']['databasePath'])
     mapHelper = m.MapHelper()
     result = logger.query(nodeName=nodeName, nodeMAC=nodeMAC, ssid=ssid, channel=channel, startTime=startTime, stopTime=stopTime)
-    if (result == []):
-        print('No points in the database match the query. Exiting.')
+    if (result == []) or (result is None):
+        d.debugLog('No points in the database match the query. Exiting.')
         return None
     else:
         points = logger.databaseToPoints(result)
-        # print(mapHelper.pointsToGoogleLatLng(points))
+        # d.debugLog(mapHelper.pointsToGoogleLatLng(points))
         bounds = mapHelper.boundingRectangle(points)
         mapSettings = mapHelper.boundsToCenterZoom(bounds, mapDimPixels)
         return { 'center': mapSettings['center'], 'zoom': mapSettings['zoom'] }
-    
-print(queryBoundsAndZoom({ 'height': 1000, 'width': 800 }, channel=175))

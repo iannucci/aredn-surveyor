@@ -5,7 +5,7 @@ A set of tools for collecting AREDN signal strength data, geo-referencing it, an
 ## Hardware Configuration
 
 You will need
-- the Raspberry Pi -- a 3B+ with 1 GB of RAM is a good choice.  A Pi 4 is overkill.  A Pi 5 is way overkill.
+- the Raspberry Pi -- this has been tested with a Pi5.  A Pi 3B+ was found to be too slow to support remote debugging via VSCode.  YMMV.
 - a GPS receiver
 - an AREDN node
 - an ethernet hub
@@ -26,10 +26,24 @@ The code uses SQLite to record measurements.  `sudo apt install sqlite3` usually
 
 ### This Repo
 
-- Clone this repo to a convenient place on your Pi.  You will need to create `aredn_wardriving/conf/config.ini` and fill it in.  Start by copying `aredn_wardriving/conf/config-example.ini`.  
+- Clone this repo to a convenient place on your Pi.  You will need to create `config/config.ini` and fill it in.  Start by copying `config/config-example.ini`.  
 
-- Create a virtual environment for Python.  In a directory of your choice, run `python3 -m venv <envname>`, where <envname> will become the name of the directory that holds the virtual environment's files.  
+- Initialize the Python VSCode extension for this cloned folder.
 
-- Install the project dependencies from within `aredn_wardriving/` by running `<full-path-to-venv>/bin/pip install .`
+- Install Conda.  Go to the [Anaconda archive](https://repo.anaconda.com/archive/) and find the most recent Linux-aarch64.sh link and copy it.  ssh to your Pi and `curl -O` that link.  Once this file is downloaded, run `bash <filename>` to install it.  It will take 10-15 minutes.
 
-- Create the database file and table by running `create_sqlite_database.py` 
+- If you have a Remote session already running in VSCode that is attached to your Pi, either restart the session or restart VSCode so that the Conda installation will be recognized.
+
+- Create a virtual environment for Python.  Use the VSCode 'Create Environment' command and select Conda.  This will result in a `.conda` folder being created in the project folder. 
+
+- Install the project dependencies from within the `src/` subdirectory by running `pip install .`
+
+- In VSCode, open `create_sqlite_database.py` and run it.
+
+- The user-id that will be running this code needs to be added to the dialout group to access the serial port: `sudo adduser <user-id> dialout`
+
+- Install the SQLite Viewer in VSCode.  In the file explorer of VSCode, click on the database file.  You should see a table called `Readings` and by opening this, you should see the field names (e.g. Node_Name, Node_MAC_Address, ...)
+
+- In VSCode, create a debug configuration for the module.
+
+- Launch the module debugger.  This should bring up a pop-up in VSCode that provides access to the web UI (map).  With no readings in the database, the map will remain blank.  Once readings are recorded, the map will appear, centered on the readings.

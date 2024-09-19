@@ -1,7 +1,13 @@
 # Project-specific
+.venv
+.conda
+**/__pycache__
+*.egg-info
 config.ini
 /python-environment/
 /.vscode/
+database/
+*.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

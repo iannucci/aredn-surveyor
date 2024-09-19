@@ -5,9 +5,10 @@
 import sqlite3
 import pathlib
 import configparser
+from src.debugger.debug_log import debugLog
 
 thisDir = pathlib.Path(__file__).parent.resolve()
-configPath = '%s/conf/config.ini' % thisDir
+configPath = '%s/config/config.ini' % thisDir
 config = configparser.ConfigParser()
 config.read(configPath)
 
@@ -34,9 +35,9 @@ def create_sqlite_database(dbFilePath):
     conn = None
     try:
         conn = sqlite3.connect(dbFilePath)
-        print(sqlite3.sqlite_version)
+        debugLog(sqlite3.sqlite_version)
     except sqlite3.Error as e:
-        print(e)
+        debugLog(e)
     finally:
         if conn:
             conn.close()
@@ -45,7 +46,7 @@ def create_sqlite_table(dbFilePath, sqlString):
     connection_obj = sqlite3.connect(dbFilePath)
     cursor_obj = connection_obj.cursor()
     cursor_obj.execute(sqlString)
-    print("Table is Ready")
+    debugLog("Table is Ready")
     connection_obj.close()
 
 create_sqlite_database(dbPath)
