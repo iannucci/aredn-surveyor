@@ -13,9 +13,13 @@ class GPS():
         self.serialPort = serialPort
         self.baudRate = baudRate
         
-    def query(self):   
-        ser = serial.Serial(self.serialPort, self.baudRate, timeout=5.0)
-        sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser))
+    def query(self):
+        try:
+            ser = serial.Serial(self.serialPort, self.baudRate, timeout=5.0)
+            sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser))
+        except Exception as e:
+            debugLog('[gps] Serial error: %s', (e,))
+            return None
 
         while 1:
             try:
@@ -23,14 +27,17 @@ class GPS():
                 if (line[:6] == "$GPGGA"):
                     msg = pynmea2.parse(line)
                     return msg
+                else:
+                    return None
             except serial.SerialException as e:
                 debugLog('[gps] Device error: %s', (e,))
-                break
+                return None
             except pynmea2.ParseError as e:
                 debugLog('[gps] Parse error: %s', (e,))
-                continue
+                return None
             except Exception as e:
                 debugLog('[gps] Other error: %s', (e,))
+                return None
             
     def distanceInMeters(self, position1, position2):
         lat1 = position1.latitude

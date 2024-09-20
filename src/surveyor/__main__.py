@@ -27,11 +27,16 @@ def logging():
     while True:
         readings = surveyor.query()
         position = gps.query()
+        if (position is None):
+            debugLog('[main] GPS position is unknown -- skipping')
+            continue
         if (position.latitude == 0 and position.longitude == 0):
+            debugLog('[main] GPS position is invalid -- skipping')
             continue
         if (positionOfLastLogEntry is None) or (gps.distanceInMeters(position, positionOfLastLogEntry) >= int(config['application']['minMetersToMove'])):
             for index, r in readings.items():
                 if math.isnan(r['SNR']):
+                    debugLog('[main] SNR is invalid -- skipping')
                     continue
                 logger.log(r['Hostname'], r['MAC/BSSID'], r['802.11 Mode'], r['SSID'], r['SNR'], r['Signal'], r['Chan'], position.latitude, position.longitude, config['receiver']['antenna'], config['receiver']['mounting'])
             positionOfLastLogEntry = position
@@ -40,7 +45,9 @@ def logging():
 try:
     loggingThread = threading.Thread(target=logging, args=())
     wesbserverThread = threading.Thread(target=webserver, args=())
+    debugLog('[main] Starting logging thread')
     loggingThread.start()
+    debugLog('[main] Starting webserver thread')
     wesbserverThread.start()
 except KeyboardInterrupt:
     debugLog('[main] \nDone')
