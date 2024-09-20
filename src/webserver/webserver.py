@@ -14,7 +14,7 @@ config.read(configFilePath)
 
 import logger.logger as l
 import webserver.map_helper as m
-import debugger.debug_log as d
+from src.debugger.debug_log import debugLog
 
 app = Flask(__name__)
 
@@ -38,7 +38,7 @@ def heatmapData():
     # result = logger.query(nodeName=nodeName, nodeMAC=nodeMAC, ssid=ssid, channel=channel, startTime=startTime, stopTime=stopTime)
     result = logger.query(channel=175)
     if (result == []):
-        d.debugLog('No points in the database match the query. Exiting.')
+        debugLog('[webserver] No points in the database match the query. Exiting.')
         return None
     else:
         points = logger.databaseToPoints(result)
@@ -46,7 +46,7 @@ def heatmapData():
         mapDimPixels = { 'height': 1000, 'width': 800 }
         mapSettings = mapHelper.boundsToCenterZoom(bounds, mapDimPixels)
         serverResponse = { 'center': mapSettings['center'], 'zoom': mapSettings['zoom'] , 'points': points }
-    # d.debugLog('[heatmap-data] Replying to client with %s', (serverResponse,))
+    # debugLog('[webserver] Replying to client with %s', (serverResponse,))
     return serverResponse
 
 # css and js files, among others, are served via this rule

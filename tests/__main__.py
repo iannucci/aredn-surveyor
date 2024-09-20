@@ -9,8 +9,8 @@ moduleDir = '%s/src' % projectDir
 configFilePath = '%s/config/config.ini' % moduleDir
 sys.path.append(os.fspath(projectDir))
 
-import src.debugger.debug_log as d
+from src.debugger.debug_log import debugLog
 
 from tests.query import queryBoundsAndZoom
 
-d.debugLog(str(queryBoundsAndZoom({ 'height': 1000, 'width': 800 }, channel=175)))
+debugLog(str(queryBoundsAndZoom({ 'height': 1000, 'width': 800 }, channel=175)))

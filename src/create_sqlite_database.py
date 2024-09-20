@@ -35,9 +35,9 @@ def create_sqlite_database(dbFilePath):
     conn = None
     try:
         conn = sqlite3.connect(dbFilePath)
-        debugLog(sqlite3.sqlite_version)
+        debugLog("[create-sqlite-database] %s" % sqlite3.sqlite_version)
     except sqlite3.Error as e:
-        debugLog(e)
+        debugLog("[create-sqlite-database] %s" % e)
     finally:
         if conn:
             conn.close()
@@ -46,7 +46,7 @@ def create_sqlite_table(dbFilePath, sqlString):
     connection_obj = sqlite3.connect(dbFilePath)
     cursor_obj = connection_obj.cursor()
     cursor_obj.execute(sqlString)
-    debugLog("Table is Ready")
+    debugLog("[create-sqlite-database] Table is Ready")
     connection_obj.close()
 
 create_sqlite_database(dbPath)

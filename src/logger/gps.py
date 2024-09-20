@@ -24,13 +24,13 @@ class GPS():
                     msg = pynmea2.parse(line)
                     return msg
             except serial.SerialException as e:
-                debugLog('Device error: %s', (e,))
+                debugLog('[gps] Device error: %s', (e,))
                 break
             except pynmea2.ParseError as e:
-                debugLog('Parse error: %s', (e,))
+                debugLog('[gps] Parse error: %s', (e,))
                 continue
-            except e:
-                debugLog('Other error: %s', (e,))
+            except Exception as e:
+                debugLog('[gps] Other error: %s', (e,))
             
     def distanceInMeters(self, position1, position2):
         lat1 = position1.latitude

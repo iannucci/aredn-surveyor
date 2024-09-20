@@ -3,7 +3,6 @@
 # See LICENSE.md for license information
 
 import math
-from src.debugger.debug_log import debugLog
 
 ZOOM_MAX = 16
 
