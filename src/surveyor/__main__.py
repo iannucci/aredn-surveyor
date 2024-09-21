@@ -8,8 +8,8 @@ import configparser
 import pathlib
 import threading
 from src.logger.logger import Logger
-from src.logger.collector import Collector
-from src.logger.gps import GPS
+from src.collector.collector import Collector
+from src.positioner.gps import GPS
 from src.webserver.webserver import webserver
 from src.debugger.debug_log import debugLog
 
@@ -61,7 +61,7 @@ try:
     loggingThread = threading.Thread(target=logging, args=())
     wesbserverThread = threading.Thread(target=webserver, args=())
     #
-    # Future: put GPS and log reader in their own threads
+    # Future: log reader in its own thread
     #         Create a time-stamped queue of readings from the log thread
     #         Periodically pop the queue and check the GPS
     #           * If no (or stale) position

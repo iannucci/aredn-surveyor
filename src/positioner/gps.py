@@ -29,6 +29,7 @@ class GPS():
         self.pollingThread = None
         self.serialConnection = None
         self.serialIO = None
+        self.staleReadingLogSeconds = 10
         
     # If no thread already, create one and start it
     def start(self):
@@ -99,7 +100,9 @@ class GPS():
                     debugLog('[gps] Other error: %s', (e,))
                     debugError(e)
                     return False
-            debugLog('[gps] Failed %d attempts to read the position:\r', (maxGPSTries,))
+            if (time.time() - self.lastPositionUTC > 10):
+                debugLog('[gps] No valid GPS reading in the last %d seconds', (self.staleReadingLogSeconds,))
+            # debugLog('[gps] None of the last %d GPS strings contained position information\r', (maxGPSTries,))
             # for line in lines:
             #     debugLog('[gps]   %s', (line,))
             return False
