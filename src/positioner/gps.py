@@ -65,6 +65,7 @@ class GPS():
             # Establish connection to the GPS module
             try:
                 self.serialConnection = serial.Serial(self.serialPort, self.baudRate, timeout=float(config['gps']['gpsSerialTimeoutSeconds']))
+                # self.serialConnection.set_buffer_size(rx_size = 8192, tx_size = 8192)
                 self.serialIO = io.TextIOWrapper(io.BufferedRWPair(self.serialConnection, self.serialConnection))
                 return True
             except Exception as e:
@@ -87,7 +88,7 @@ class GPS():
                         self.lastPosition = position
                         self.lastPositionUTC = time.time()
                         # debugLog('[gps] Position: Lat: %f  Lon:%f', (position.latitude, position.longitude,))
-                        return True
+                    return True
                 except serial.SerialException as e:
                     debugLog('[gps] Device error: %s', (e,))
                     debugError(e)
@@ -113,11 +114,12 @@ class GPS():
                 # Open a serial connection
                 while not establishSerialIO():
                     # Something went wrong -- wait and then retry
-                    time.sleep(float(config['gps']['gpsSleepErrorSeconds']))
+                    time.sleep(int(config['gps']['gpsSleepErrorSeconds']))
                 # With a valid serial connection, continually read position
                 while getPosition():
                     # Got a good position -- wait and then get another
-                    time.sleep(float(config['gps']['gpsSleepValidPositionSeconds']))
+                    sleepSeconds = int(config['gps']['gpsSleepValidPositionSeconds'])
+                    time.sleep(sleepSeconds)
             except Exception as e:
                 debugLog('[gps] GPS thread error, re-starting: %s', (e,))
                 debugError(e)
