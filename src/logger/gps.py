@@ -6,39 +6,125 @@ import pynmea2
 import io
 import serial
 import math
-from src.debugger.debug_log import debugLog
+import time
+import threading
+import configparser
+import pathlib
+from src.debugger.debug_log import debugLog, debugError
+
+projectDir = pathlib.Path(__file__).parent.parent.resolve()
+thisDir = pathlib.Path(__file__).parent.resolve()
+configPath = '%s/config/config.ini' % projectDir
+config = configparser.ConfigParser()
+config.read(configPath)
+maxGPSTries = 10
 
 class GPS():
+    # Save state information but do not create a thread
     def __init__(self, serialPort, baudRate):
         self.serialPort = serialPort
         self.baudRate = baudRate
+        self.lastPosition = None
+        self.lastPositionUTC = None
+        self.pollingThread = None
+        self.serialConnection = None
+        self.serialIO = None
         
+    # If no thread already, create one and start it
+    def start(self):
+        debugLog('[gps] Starting')
+        if (self.pollingThread is None):
+            self.pollingThread = threading.Thread(target=self.pollingLoop, args=())
+            self.pollingThread.start()
+            return True
+        else:
+            return False
+        
+    # If thread exists, stop it
+    def stop(self):
+        debugLog('[gps] Stopping')
+        if (self.pollingThread is not None):
+            self.pollingThread.join()
+            self.pollingThread = None
+            self.lastPosition = None
+            self.lastPositionUTC = None
+            return True
+        else:
+            return False
+        
+    # Returns (lastPosition, ageInSeconds) 
     def query(self):
-        try:
-            ser = serial.Serial(self.serialPort, self.baudRate, timeout=5.0)
-            sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser))
-        except Exception as e:
-            debugLog('[gps] Serial error: %s', (e,))
-            return None
-
-        while 1:
+        if (self.lastPosition is not None):
+            return (self.lastPosition, time.time() - self.lastPositionUTC)
+        else:
+            return (None, None)
+        
+    def pollingLoop(self):
+        def establishSerialIO():
+            # Establish connection to the GPS module
             try:
-                line = sio.readline()
-                if (line[:6] == "$GPGGA"):
-                    msg = pynmea2.parse(line)
-                    return msg
-                else:
-                    return None
-            except serial.SerialException as e:
-                debugLog('[gps] Device error: %s', (e,))
-                return None
-            except pynmea2.ParseError as e:
-                debugLog('[gps] Parse error: %s', (e,))
-                return None
+                self.serialConnection = serial.Serial(self.serialPort, self.baudRate, timeout=float(config['gps']['gpsSerialTimeoutSeconds']))
+                self.serialIO = io.TextIOWrapper(io.BufferedRWPair(self.serialConnection, self.serialConnection))
+                return True
             except Exception as e:
-                debugLog('[gps] Other error: %s', (e,))
-                return None
+                debugLog('[gps] Serial error: %s', (e,))
+                debugError(e)
+                self.self.serialConnection = None
+                self.serialIO = None
+                return False
             
+        def getPosition():
+            # Might have to read a couple lines from the GPS before getting
+            # a $GPGGA or $GPRMC NMEA message
+            lines = []
+            for i in range(maxGPSTries):
+                try:
+                    line = self.serialIO.readline()
+                    lines.append(line)
+                    if (line[:6] == "$GPGGA") or (line[:6] == "$GPRMC"):
+                        position = pynmea2.parse(line)
+                        self.lastPosition = position
+                        self.lastPositionUTC = time.time()
+                        # debugLog('[gps] Position: Lat: %f  Lon:%f', (position.latitude, position.longitude,))
+                        return True
+                except serial.SerialException as e:
+                    debugLog('[gps] Device error: %s', (e,))
+                    debugError(e)
+                    return False
+                except pynmea2.ParseError as e:
+                    debugLog('[gps] Parse error: %s', (e,))
+                    debugError(e)
+                    return False
+                except Exception as e:
+                    debugLog('[gps] Other error: %s', (e,))
+                    debugError(e)
+                    return False
+            debugLog('[gps] Failed %d attempts to read the position:\r', (maxGPSTries,))
+            # for line in lines:
+            #     debugLog('[gps]   %s', (line,))
+            return False
+        
+        # Main loop -- repeat until the thread is stopped
+        while True:
+            try:
+                # Open a serial connection
+                while not establishSerialIO():
+                    # Something went wrong -- wait and then retry
+                    time.sleep(float(config['gps']['gpsSleepErrorSeconds']))
+                # With a valid serial connection, continually read position
+                while getPosition():
+                    # Got a good position -- wait and then get another
+                    time.sleep(float(config['gps']['gpsSleepValidPositionSeconds']))
+            except Exception as e:
+                debugLog('[gps] GPS thread error, re-starting: %s', (e,))
+                debugError(e)
+            finally:
+                # Before looping back, close the serial port
+                self.serialConnection.close()
+                self.serialConnection = None
+                self.serialIO = None
+                continue
+
     def distanceInMeters(self, position1, position2):
         lat1 = position1.latitude
         lon1 = position1.longitude

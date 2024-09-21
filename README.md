@@ -1,4 +1,4 @@
-# AREDN Wardriving
+# AREDN Surveyor
 
 A set of tools for collecting AREDN signal strength data, geo-referencing it, and displaying the data on a map.  This code was initially developed to run on a Mac, but it is being maintained to run on a Raspberry Pi (tested on a Pi 3 running 64 bit Raspberry Pi OS).
 
@@ -38,7 +38,7 @@ The code uses SQLite to record measurements.  `sudo apt install sqlite3` usually
 
 - Install the project dependencies from within the `src/` subdirectory by running `pip install .`
 
-- In VSCode, open `create_sqlite_database.py` and run it.
+- In VSCode, open `creator/create_sqlite_database.py` and run it.
 
 - The user-id that will be running this code needs to be added to the dialout group to access the serial port: `sudo adduser <user-id> dialout`
 
