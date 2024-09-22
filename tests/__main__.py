@@ -1,3 +1,7 @@
+# Component of AREDN Survey by Bob Iannucci
+#
+# See LICENSE.md for license information
+
 # Invoke via python -m tests
 
 import pathlib

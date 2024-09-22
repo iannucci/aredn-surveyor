@@ -1,3 +1,7 @@
+# Component of AREDN Survey by Bob Iannucci
+#
+# See LICENSE.md for license information
+
 from flask import Flask, send_from_directory
 import configparser as c
 import pathlib

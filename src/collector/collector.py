@@ -1,4 +1,4 @@
-# Component of aredn_wardiving by Bob Iannucci
+# Component of AREDN Survey by Bob Iannucci
 #
 # See LICENSE.md for license information
 

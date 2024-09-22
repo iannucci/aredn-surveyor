@@ -1,4 +1,4 @@
-# Component of aredn_wardiving by Bob Iannucci
+# Component of AREDN Survey by Bob Iannucci
 #
 # See LICENSE.md for license information
 
@@ -65,7 +65,6 @@ class GPS():
             # Establish connection to the GPS module
             try:
                 self.serialConnection = serial.Serial(self.serialPort, self.baudRate, timeout=float(config['gps']['gpsSerialTimeoutSeconds']))
-                # self.serialConnection.set_buffer_size(rx_size = 8192, tx_size = 8192)
                 self.serialIO = io.TextIOWrapper(io.BufferedRWPair(self.serialConnection, self.serialConnection))
                 return True
             except Exception as e:
@@ -87,25 +86,21 @@ class GPS():
                         position = pynmea2.parse(line)
                         self.lastPosition = position
                         self.lastPositionUTC = time.time()
-                        # debugLog('[gps] Position: Lat: %f  Lon:%f', (position.latitude, position.longitude,))
                     return True
                 except serial.SerialException as e:
                     debugLog('[gps] Device error: %s', (e,))
                     debugError(e)
                     return False
                 except pynmea2.ParseError as e:
-                    debugLog('[gps] Parse error: %s', (e,))
-                    debugError(e)
+                    # debugLog('[gps] Parse error: %s', (e,))
+                    # debugError(e)
                     return False
                 except Exception as e:
                     debugLog('[gps] Other error: %s', (e,))
                     debugError(e)
                     return False
             if (time.time() - self.lastPositionUTC > 10):
-                debugLog('[gps] No valid GPS reading in the last %d seconds', (self.staleReadingLogSeconds,))
-            # debugLog('[gps] None of the last %d GPS strings contained position information\r', (maxGPSTries,))
-            # for line in lines:
-            #     debugLog('[gps]   %s', (line,))
+                debugLog('[gps] No valid GPS readings in the last %d seconds', (self.staleReadingLogSeconds,))
             return False
         
         # Main loop -- repeat until the thread is stopped
@@ -113,18 +108,16 @@ class GPS():
             try:
                 # Open a serial connection
                 while not establishSerialIO():
-                    # Something went wrong -- wait and then retry
-                    time.sleep(int(config['gps']['gpsSleepErrorSeconds']))
+                    # Something went wrong -- wait a bit so as not to flood the log, then retry
+                    time.sleep(int(config['gps']['gpsSleepOnErrorSeconds']))
                 # With a valid serial connection, continually read position
                 while getPosition():
-                    # Got a good position -- wait and then get another
-                    sleepSeconds = int(config['gps']['gpsSleepValidPositionSeconds'])
-                    time.sleep(sleepSeconds)
+                    pass
             except Exception as e:
                 debugLog('[gps] GPS thread error, re-starting: %s', (e,))
                 debugError(e)
             finally:
-                # Before looping back, close the serial port
+                # Before looping back, close the serial port so that it can be re-opened afresh
                 self.serialConnection.close()
                 self.serialConnection = None
                 self.serialIO = None
