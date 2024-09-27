@@ -45,7 +45,7 @@ def logging():
               (gps.distanceInMeters(position, positionOfLastLogEntry) >= int(config['application']['minMetersToMove'])))):
             for index, r in readings.items():
                 if math.isnan(r['SNR']):
-                    debugLog('[main] SNR is invalid -- skipping')
+                    # debugLog('[main] SNR is invalid -- skipping')
                     continue
                 logger.log(r['Hostname'], r['MAC/BSSID'], r['802.11 Mode'], r['SSID'], r['SNR'], r['Signal'], r['Chan'], position.latitude, position.longitude, config['receiver']['antenna'], config['receiver']['mounting'])
             positionOfLastLogEntry = position

@@ -33,7 +33,6 @@ class GPS():
         
     # If no thread already, create one and start it
     def start(self):
-        debugLog('[gps] Starting')
         if (self.pollingThread is None):
             self.pollingThread = threading.Thread(target=self.pollingLoop, args=())
             self.pollingThread.start()
@@ -66,6 +65,7 @@ class GPS():
             try:
                 self.serialConnection = serial.Serial(self.serialPort, self.baudRate, timeout=float(config['gps']['gpsSerialTimeoutSeconds']))
                 self.serialIO = io.TextIOWrapper(io.BufferedRWPair(self.serialConnection, self.serialConnection))
+                self.serialConnection.reset_input_buffer()
                 return True
             except Exception as e:
                 debugLog('[gps] Serial error: %s', (e,))
@@ -81,8 +81,9 @@ class GPS():
             for i in range(maxGPSTries):
                 try:
                     line = self.serialIO.readline()
+                    # debugLog('[gps] GPS says %s', (line,))
                     lines.append(line)
-                    if (line[:6] == "$GPGGA") or (line[:6] == "$GPRMC"):
+                    if (line[:6] == "$GPGGA") or (line[:6] == "$GPRMC") or (line[:6] == "$GNGLL"):
                         position = pynmea2.parse(line)
                         self.lastPosition = position
                         self.lastPositionUTC = time.time()
@@ -97,6 +98,7 @@ class GPS():
                     return False
                 except Exception as e:
                     debugLog('[gps] Other error: %s', (e,))
+                    self.serialConnection.reset_input_buffer()
                     debugError(e)
                     return False
             if (time.time() - self.lastPositionUTC > 10):
