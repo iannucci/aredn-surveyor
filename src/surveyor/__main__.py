@@ -40,23 +40,32 @@ def logging():
             sleepSeconds = float(config['application']['secondsToSleepNothingToLog'])
             time.sleep(sleepSeconds)
             continue
-        if  ((len(readings) > 0) and
-             ((positionOfLastLogEntry is None) or 
-              (gps.distanceInMeters(position, positionOfLastLogEntry) >= int(config['application']['minMetersToMove'])))):
-            for index, r in readings.items():
-                if math.isnan(r['SNR']):
-                    # debugLog('[main] SNR is invalid -- skipping')
-                    continue
-                logger.log(r['Hostname'], r['MAC/BSSID'], r['802.11 Mode'], r['SSID'], r['SNR'], r['Signal'], r['Chan'], position.latitude, position.longitude, config['receiver']['antenna'], config['receiver']['mounting'])
+        
+        distanceInMeters = gps.distanceInMeters(position, positionOfLastLogEntry or position)
+        
+        if ((positionOfLastLogEntry is None) or 
+            (distanceInMeters >= float(config['application']['minMetersToMove']))):
+            if (positionOfLastLogEntry is None):
+                debugLog('[main] Creating initial log entry')
+            else:
+                debugLog('[main] Creating log entry because we have moved %.1f meters', (distanceInMeters,))
+            nReadings = len(readings)
+            if nReadings == 0:
+                debugLog('[main] No signal -- recording position only')
+                logger.log('No signal', '', '', '', -100, -100, 0, position.latitude, position.longitude, config['receiver']['antenna'], config['receiver']['mounting'])
+            else:
+                debugLog('[main] %d readings', (nReadings,))
+                for index, r in readings.items():
+                    if math.isnan(r['SNR']):
+                        debugLog('[main] SNR is invalid -- skipping')
+                        continue
+                    logger.log(r['Hostname'], r['MAC/BSSID'], r['802.11 Mode'], r['SSID'], r['SNR'], r['Signal'], r['Chan'], position.latitude, position.longitude, config['receiver']['antenna'], config['receiver']['mounting'])
             positionOfLastLogEntry = position
-            sleepSeconds = float(config['application']['secondsToSleepAfterLogging'])
-            debugLog('[main] Recorded %d entries; preparing to sleep for %d seconds', (len(readings), sleepSeconds,))
-            time.sleep(sleepSeconds)
-        else:
-            sleepSeconds = float(config['application']['secondsToSleepNothingToLog'])
-            # debugLog('[main] Preparing to sleep for %d seconds', (sleepSeconds,))
-            time.sleep(sleepSeconds)
-
+        sleepSeconds = float(config['application']['secondsToSleepAfterLogging'])
+        time.sleep(sleepSeconds)
+        
+        
+        
 try:
     loggingThread = threading.Thread(target=logging, args=())
     wesbserverThread = threading.Thread(target=webserver, args=())

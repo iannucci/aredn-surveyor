@@ -65,6 +65,7 @@ class GPS():
             try:
                 self.serialConnection = serial.Serial(self.serialPort, self.baudRate, timeout=float(config['gps']['gpsSerialTimeoutSeconds']))
                 self.serialIO = io.TextIOWrapper(io.BufferedRWPair(self.serialConnection, self.serialConnection))
+                time.sleep(5)
                 self.serialConnection.reset_input_buffer()
                 return True
             except Exception as e:
@@ -87,6 +88,7 @@ class GPS():
                         position = pynmea2.parse(line)
                         self.lastPosition = position
                         self.lastPositionUTC = time.time()
+                        # debugLog('[gps] Position: Lat: %f  Lon: %f', (position.latitude, position.longitude,))
                     return True
                 except serial.SerialException as e:
                     debugLog('[gps] Device error: %s', (e,))
@@ -144,4 +146,4 @@ class GPS():
                 math.cos(lat1) * math.cos(lat2));
         rad = 6371
         c = 2 * math.asin(math.sqrt(a))
-        return rad * c
+        return rad * c * 1000

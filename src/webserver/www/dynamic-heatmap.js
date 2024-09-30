@@ -1,13 +1,16 @@
 // This example requires the Visualization library. Include the libraries=visualization
 // parameter when you first load the API. For example:
 // <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=visualization">
-let map, heatmap;
+let map
+let heatmap
+let loggingEnabled = false
 
 async function initMap() {
     let serverData = await getServerData();
     let center = serverData.center;
     let zoom = serverData.zoom;
     let points = serverData.points;
+    enableLogging(false);
     map = new google.maps.Map(document.getElementById("map"), {
         zoom: zoom,
         center: center,
@@ -33,6 +36,9 @@ async function initMap() {
     document
         .getElementById("refresh-data")
         .addEventListener("click", refreshData);
+    document
+        .getElementById("enable-logging")
+        .addEventListener("click", toggleLogging)
 }
 
 function toggleHeatmap() {
@@ -66,6 +72,24 @@ function changeRadius() {
 
 function changeOpacity() {
     heatmap.set("opacity", heatmap.get("opacity") ? null : 0.2);
+}
+
+function toggleLogging() {
+    enableLogging(!loggingEnabled)
+}
+
+function enableLogging(enable) {
+    let button = document.getElementById("enable-logging");
+    if (enable) {
+        button.style.backgroundColor = "red";
+        button.innerHTML = 'Stop logging';
+        let promptString = 'Enter the name for this session';
+        var retVal = prompt(promptString, "");
+    } else {
+        button.style.backgroundColor = "green";
+        button.innerHTML = 'Start logging';
+    }
+    loggingEnabled = enable;
 }
 
 async function refreshData() {
@@ -102,4 +126,20 @@ function pointsToGoogleLatLng(points) {
     return result;
 }
 
+
+function loggingModal() {
+    var modal = document.getElementById("loggingModal");
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName("close")[0];
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function () {
+        modal.style.display = "none";
+    }
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function (event) {
+        if (event.target != modal) {
+            modal.style.display = "none";
+        }
+    }
+}
 window.initMap = initMap;

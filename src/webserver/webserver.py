@@ -40,7 +40,7 @@ def heatmap():
 @app.route('/heatmap-data')
 def heatmapData():
     # result = logger.query(nodeName=nodeName, nodeMAC=nodeMAC, ssid=ssid, channel=channel, startTime=startTime, stopTime=stopTime)
-    result = logger.query(channel=175)
+    result = logger.query(startTime=1727560368, stopTime=1727560484)  #channel=175)
     if (result == []):
         debugLog('[webserver] No points in the database match the query. Exiting.')
         return None
