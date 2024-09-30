@@ -4,12 +4,19 @@
 let map
 let heatmap
 let loggingEnabled = false
+const resizeObserver = new ResizeObserver(entries => {
+    for (let entry of entries) {
+        entry.target.style.width = entry.contentRect.width + 'px';
+    }
+})
 
 async function initMap() {
     let serverData = await getServerData();
     let center = serverData.center;
     let zoom = serverData.zoom;
     let points = serverData.points;
+    let controlPanel = document.getElementById('floating-control-panel');
+    resizeObserver.observe(controlPanel);
     enableLogging(false);
     map = new google.maps.Map(document.getElementById("map"), {
         zoom: zoom,
@@ -21,6 +28,13 @@ async function initMap() {
         data: pointsToGoogleLatLng(points),
         map: map,
     });
+    enableHeatmap(false);
+    document
+        .getElementById("enable-logging")
+        .addEventListener("click", toggleLogging);
+    document
+        .getElementById("display-type")
+        .addEventListener("change", changeDisplayType);
     document
         .getElementById("toggle-heatmap")
         .addEventListener("click", toggleHeatmap);
@@ -36,9 +50,26 @@ async function initMap() {
     document
         .getElementById("refresh-data")
         .addEventListener("click", refreshData);
-    document
-        .getElementById("enable-logging")
-        .addEventListener("click", toggleLogging)
+}
+
+function changeDisplayType() {
+    let heatmapPanel = document.getElementById("floating-heatmap-panel");
+    let displayTypeDropdown = document.getElementById("display-type");
+    let displayTypeValue = displayTypeDropdown.options[displayTypeDropdown.selectedIndex].text;
+    enableHeatmap(displayTypeValue == 'Heatmap')
+}
+
+function enableHeatmap(enable) {
+    let heatmapPanel = document.getElementById("floating-heatmap-panel");
+    if (enable) {
+        heatmapPanel.style.visibility = 'visible';
+        heatmapPanel.offsetWidth;
+        heatmap.setMap(map);
+    } else {
+        heatmapPanel.style.visibility = 'hidden';
+        heatmapPanel.offsetWidth;
+        heatmap.setMap(null);
+    }
 }
 
 function toggleHeatmap() {
@@ -78,16 +109,23 @@ function toggleLogging() {
     enableLogging(!loggingEnabled)
 }
 
-function enableLogging(enable) {
+async function enableLogging(enable) {
     let button = document.getElementById("enable-logging");
+    let sessionNameField = document.getElementById('session-name');
     if (enable) {
-        button.style.backgroundColor = "red";
-        button.innerHTML = 'Stop logging';
         let promptString = 'Enter the name for this session';
-        var retVal = prompt(promptString, "");
+        var logName = prompt(promptString, "");
+        if (logName) {
+            button.style.backgroundColor = "red";
+            button.innerHTML = 'Stop logging';
+            sessionNameField.innerHTML = logName;
+        }
+        await serverStartLogging(logName);
     } else {
         button.style.backgroundColor = "green";
         button.innerHTML = 'Start logging';
+        sessionNameField.innerHTML = '';
+        await serverStopLogging();
     }
     loggingEnabled = enable;
 }
@@ -115,6 +153,33 @@ async function getServerData() {
     return serverJSON;
 }
 
+async function serverStartLogging(logName) {
+    const response = await fetch('logging', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            logging: true,
+            logName: logName 
+        }) 
+    });
+    return response;
+}
+
+async function serverStopLogging() {
+    const response = await fetch('logging', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            logging: false 
+        })
+    });
+    return response;
+}
+
 function pointsToGoogleLatLng(points) {
     let result = [];
     points.forEach(point => {
@@ -126,20 +191,4 @@ function pointsToGoogleLatLng(points) {
     return result;
 }
 
-
-function loggingModal() {
-    var modal = document.getElementById("loggingModal");
-    // Get the <span> element that closes the modal
-    var span = document.getElementsByClassName("close")[0];
-    // When the user clicks on <span> (x), close the modal
-    span.onclick = function () {
-        modal.style.display = "none";
-    }
-    // When the user clicks anywhere outside of the modal, close it
-    window.onclick = function (event) {
-        if (event.target != modal) {
-            modal.style.display = "none";
-        }
-    }
-}
 window.initMap = initMap;

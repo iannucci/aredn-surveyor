@@ -8,19 +8,21 @@
 </head>
 
 <body>
-    <div id="floating-panel">
+    <div id="floating-control-panel">
+        <select name="display-type" id="display-type">
+            <option value="volvo">Points</option>
+            <option value="saab">Signal strength</option>
+            <option value="mercedes">Heatmap</option>
+        </select>
+        <button id="refresh-data">Refresh data</button>
+        <button id="enable-logging">Logging</button>
+        <div id="session-name"></div>
+    </div>
+    <div id="floating-heatmap-panel">
         <button id="toggle-heatmap">Toggle Heatmap</button>
         <button id="change-gradient">Change gradient</button>
         <button id="change-radius">Change radius</button>
         <button id="change-opacity">Change opacity</button>
-        <button id="refresh-data">Refresh data</button>
-        <button id="enable-logging">Logging</button>
-        <select name="cars" id="cars">
-            <option value="volvo">Volvo</option>
-            <option value="saab">Saab</option>
-            <option value="mercedes">Mercedes</option>
-            <option value="audi">Audi</option>
-        </select>
     </div>
     <div id="map"></div>
 

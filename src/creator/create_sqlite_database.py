@@ -5,10 +5,15 @@
 import sqlite3
 import pathlib
 import configparser
-from src.debugger.debug_log import debugLog
+import os
+import sys
 
-thisDir = pathlib.Path(__file__).parent.resolve()
-configPath = '%s/config/config.ini' % thisDir
+projectDir = pathlib.Path(__file__).parent.parent.resolve()
+sys.path.append(os.fspath(projectDir))
+
+from debugger.debug_log import debugLog
+
+configPath = '%s/config/config.ini' % projectDir
 config = configparser.ConfigParser()
 config.read(configPath)
 

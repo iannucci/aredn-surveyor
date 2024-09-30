@@ -2,7 +2,7 @@
 #
 # See LICENSE.md for license information
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, request
 import configparser as c
 import pathlib
 import sys
@@ -12,6 +12,7 @@ projectDir = pathlib.Path(__file__).parent.parent.resolve()
 moduleDir = '%s/src' % projectDir
 configFilePath = '%s/config/config.ini' % projectDir
 sys.path.append(os.fspath(projectDir))
+surveyor = None
 
 config = c.ConfigParser()
 config.read(configFilePath)
@@ -22,12 +23,6 @@ from src.debugger.debug_log import debugLog
 
 app = Flask(__name__)
 
-# @app.route("/")
-# def map():
-#     return send_from_directory('www', 'map.html')
-
-
-
 config = c.ConfigParser()
 config.read(configFilePath)
 logger = l.Logger(config['database']['databasePath'])
@@ -36,6 +31,23 @@ mapHelper = m.MapHelper()
 @app.route("/")
 def heatmap():
     return send_from_directory('www', 'dynamic-heatmap.html')
+
+@app.route('/logging', methods=['POST'])
+def logging():
+    global surveyor
+    dataDict = request.json
+    loggingEnabled = dataDict['logging']
+    
+    if loggingEnabled:
+        debugLog('[webserver] Logging: %s  to: %s', (str(loggingEnabled),dataDict['logName'],))
+        if surveyor:
+            surveyor.enabled = True
+    else:
+        debugLog('[webserver] Logging: %s', (str(loggingEnabled),))
+        if surveyor:
+            surveyor.enabled = False
+    serverResponse = { 'response': True }
+    return serverResponse
 
 @app.route('/heatmap-data')
 def heatmapData():
@@ -58,6 +70,13 @@ def heatmapData():
 def static_content(filename):
     return send_from_directory('www', filename)
 
-def webserver():
-    # Avoid using privileged ports like 80 -- Use something above 1024 instead
-    app.run(host='0.0.0.0', port=config['application']['port'])
+# def webserver():
+class Webserver():
+    def __init__(self, main):
+        global surveyor 
+        self.surveyor = main
+        surveyor = main
+    
+    def start(self):
+        # Avoid using privileged ports like 80 -- Use something above 1024 instead
+        app.run(host='0.0.0.0', port=config['application']['port'])

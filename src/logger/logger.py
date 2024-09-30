@@ -18,21 +18,24 @@ class Logger():
         self.connection = None
         self.cursor = None
         
-    def connect(self):
+    # Should only be called internally
+    def _connect(self):
         try:
             self.connection = sqlite3.connect(self.databasePath, check_same_thread=False)
             self.connection.row_factory = dict_factory
             self.cursor = self.connection.cursor()
         except Exception as e:
             debugLog('[logger] connect() failed: %s', (e,))
-            self.disconnect()
+            self._disconnect()
         
-    def disconnect(self):
+    # Should only be called internally
+    def _disconnect(self):
         if self.connection is not None:
             self.connection.close()
         self.connection = None
         self.cursor = None
         
+    # **FIXME** Need an input queue that provides access to this method
     def log(self, nodeName, nodeMAC, nodeMode, ssid, snr, signal, channel, latitude, longitude, antenna, mounting):
         insertStatement = 'INSERT INTO Readings ('\
         'Node_Name, '\
@@ -50,13 +53,14 @@ class Logger():
         'VALUES ("%s", "%s", "%s", "%s", %d, %d, %d, %f, %f, "%s", "%s", %d)' % (nodeName, nodeMAC, nodeMode, ssid, snr, signal, channel, latitude, longitude, antenna, mounting, int(time.time()), )
         try:
             if self.connection is None:
-                self.connect()
+                self._connect()
             self.cursor.execute(insertStatement)
             self.connection.commit()
         except Exception as e:
             debugLog('[logger] log() failed: %s', (e,))
-            self.disconnect()
-            
+            self._disconnect()
+         
+    # **FIXME** Need an input queue that provides access to this method   
     def query(self, nodeName=None, nodeMAC=None, ssid=None, channel=None, startTime=None, stopTime=None):
         priorWhere = False
         selectStatement = 'SELECT * FROM Readings '
@@ -88,13 +92,13 @@ class Logger():
                 selectStatement += ' WHERE TIME >= %s AND TIME <= %s' % (startTime, stopTime,)
         try:
             if self.connection is None:
-                self.connect()
+                self._connect()
             self.cursor.execute(selectStatement)
             rows = self.cursor.fetchall()
             return rows
         except Exception as e:
             debugLog('[logger] log() failed: %s', (e,))
-            self.disconnect()
+            self._disconnect()
             
     def databaseToPoints(self, records):
         points = []
