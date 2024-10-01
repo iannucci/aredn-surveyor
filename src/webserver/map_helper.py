@@ -55,13 +55,3 @@ class MapHelper():
         center = { 'lat': centerLat, 'lng': centerlng }
 
         return { 'center': center, 'zoom': min(latZoom, lngZoom, ZOOM_MAX) }
-    
-    def pointsToGoogleLatLng(self, points):
-        # pattern:  new google.maps.LatLng(37.751266, -122.403355)
-        result = []
-        for point in points:
-            lat = point['lat']
-            lng = point['lng']
-            googleLatLng = 'new google.maps.LatLng(%f, %f)' % (lat, lng,)
-            result.append(googleLatLng)
-        return result

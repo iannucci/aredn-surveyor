@@ -33,6 +33,7 @@ class GPS():
         
     # If no thread already, create one and start it
     def start(self):
+        debugLog('[gps] Starting GPS')
         if (self.pollingThread is None):
             self.pollingThread = threading.Thread(target=self.pollingLoop, args=())
             self.pollingThread.start()
@@ -42,7 +43,7 @@ class GPS():
         
     # If thread exists, stop it
     def stop(self):
-        debugLog('[gps] Stopping')
+        debugLog('[gps] Stopping GPS')
         if (self.pollingThread is not None):
             self.pollingThread.join()
             self.pollingThread = None

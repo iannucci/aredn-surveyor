@@ -29,32 +29,66 @@ logger = l.Logger(config['database']['databasePath'])
 mapHelper = m.MapHelper()
 
 @app.route("/")
-def heatmap():
-    return send_from_directory('www', 'dynamic-heatmap.html')
+def surveyor():
+    return send_from_directory('www', 'surveyor.html')
 
 @app.route('/logging', methods=['POST'])
 def logging():
     global surveyor
     dataDict = request.json
-    loggingEnabled = dataDict['logging']
-    
-    if loggingEnabled:
-        sessionName = dataDict['sessionName']
-        debugLog('[webserver] Logging: %s  to: %s', (str(loggingEnabled),sessionName,))
-        if surveyor:
-            surveyor.startSession(sessionName)
+    # We make two passes over the dataDict:
+    #   the first pass only checks for validity
+    #   the second pass, if the first is successful, makes the changes
+    invalid = not surveyor
+    for key, value in dataDict.items():
+        match key:
+            case 'logging':
+                pass
+            case 'startTime':
+                invalid = not validUTC(value)
+            case 'stopTime':
+                invalid = not validUTC(value) or (value <= surveyor.startTime)
+            case _:
+                invalid = True
+                
+    if invalid: 
+        return { 'valid': False }
     else:
-        debugLog('[webserver] Logging: %s', (str(loggingEnabled),))
-        if surveyor:
-            surveyor.stopSession()
-    serverResponse = { 'response': True }
-    return serverResponse
+        for key, value in dataDict.items():
+            match key:
+                case 'logging':
+                    loggingEnabled = value
+                    if loggingEnabled:
+                        sessionName = dataDict['sessionName']
+                        surveyor.startSession(sessionName)
+                    else:
+                        surveyor.stopSession()
+                case 'startTime':
+                    surveyor.startTime = value
+                case 'stopTime':
+                    surveyor.stopTime = value
+    return { 'valid': True }
 
-@app.route('/heatmap-data')
-def heatmapData():
-    # result = logger.query(nodeName=nodeName, nodeMAC=nodeMAC, ssid=ssid, channel=channel, startTime=startTime, stopTime=stopTime)
-    # result = logger.query(startTime=1727560368, stopTime=1727560484)  #channel=175)
-    result = logger.query()
+# @app.route('/heatmap-data')
+# def heatmapData():
+#     # result = logger.query(nodeName=nodeName, nodeMAC=nodeMAC, ssid=ssid, channel=channel, startTime=startTime, stopTime=stopTime)
+#     # result = logger.query(startTime=1727560368, stopTime=1727560484)  #channel=175)
+#     result = logger.query(startTime = surveyor.startTime, stopTime = surveyor.stopTime)
+#     if (result == []):
+#         debugLog('[webserver] No points in the database match the query. Exiting.')
+#         return {}
+#     else:
+#         points = logger.databaseToPoints(result)
+#         bounds = mapHelper.boundingRectangle(points)
+#         mapDimPixels = { 'height': 1000, 'width': 800 }
+#         mapSettings = mapHelper.boundsToCenterZoom(bounds, mapDimPixels)
+#         serverResponse = { 'center': mapSettings['center'], 'zoom': mapSettings['zoom'] , 'points': points }
+#     # debugLog('[webserver] Replying to client with %s', (serverResponse,))
+#     return serverResponse
+
+@app.route('/point-data')
+def pointData():
+    result = logger.query(startTime = surveyor.startTime, stopTime = surveyor.stopTime)
     if (result == []):
         debugLog('[webserver] No points in the database match the query. Exiting.')
         return {}
@@ -64,13 +98,17 @@ def heatmapData():
         mapDimPixels = { 'height': 1000, 'width': 800 }
         mapSettings = mapHelper.boundsToCenterZoom(bounds, mapDimPixels)
         serverResponse = { 'center': mapSettings['center'], 'zoom': mapSettings['zoom'] , 'points': points }
-    # debugLog('[webserver] Replying to client with %s', (serverResponse,))
+        debugLog('[webserver] Responding to /point-data request with %d point(s)', (len(points),))
     return serverResponse
 
 # css and js files, among others, are served via this rule
 @app.route("/www/<filename>")
 def static_content(filename):
     return send_from_directory('www', filename)
+
+# Returns a valid UTC else False
+def validUTC(time):
+    return isinstance(time, int)
 
 class Webserver():
     def __init__(self, main):

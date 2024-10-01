@@ -15,6 +15,7 @@ from src.debugger.debug_log import debugLog
 
 class Surveyor():
     def __init__(self):
+        debugLog('[main] -----------------------------------------------------------')
         self.projectDir = pathlib.Path(__file__).parent.parent.resolve()
         self.thisDir = pathlib.Path(__file__).parent.resolve()
         self.configPath = '%s/config/config.ini' % self.projectDir
@@ -27,6 +28,8 @@ class Surveyor():
         self.loggingThread = None
         self.wesbserverThread = None
         self.enabled = False
+        self.startTime = time.time() - 86400 # arbitrary for testing
+        self.stopTime = time.time() + 86400 # arbitrary for testing
         
     def start(self):
         self.loggingThread = threading.Thread(target=self.loop, args=())
@@ -71,8 +74,14 @@ class Surveyor():
     def loop(self):
         positionOfLastLogEntry = None
         prefix = self.config['aredn']['ssidPrefix']
+        disabledMessageShown = False
+        enabledMessageShown = False
         while True:
             while self.enabled:
+                if not enabledMessageShown:
+                    debugLog('[main] Logging is enabled; Session: %s', (self.sessionName,))
+                    enabledMessageShown = True
+                disabledMessageShown = False
                 readings = self.collector.query()
                 (position, ageInSeconds) = self.gps.query()
                 #
@@ -117,7 +126,10 @@ class Surveyor():
                 sleepSeconds = float(self.config['application']['secondsToSleepAfterLogging'])
                 time.sleep(sleepSeconds)
             else:
-                self.sessionName = None
+                enabledMessageShown = False
+                if not disabledMessageShown:
+                    debugLog('[main] Logging is disabled')
+                    disabledMessageShown = True
             sleepSeconds = float(self.config['application']['secondsToSleepWhileDisabled'])
             time.sleep(sleepSeconds)
 
@@ -126,7 +138,7 @@ try:
     surveyor.start()
 except KeyboardInterrupt:
     debugLog('[main] \nDone')
+    surveyor.stop()
 except Exception as e:
     debugLog('[main] Abnormal termination: %s', (e,))
-finally:
     surveyor.stop()
