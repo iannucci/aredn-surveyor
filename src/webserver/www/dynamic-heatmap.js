@@ -2,7 +2,7 @@
 // parameter when you first load the API. For example:
 // <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=visualization">
 let map
-let heatmap
+let heatmap = null
 let loggingEnabled = false
 const resizeObserver = new ResizeObserver(entries => {
     for (let entry of entries) {
@@ -18,16 +18,13 @@ async function initMap() {
     let controlPanel = document.getElementById('floating-control-panel');
     resizeObserver.observe(controlPanel);
     enableLogging(false);
-    map = new google.maps.Map(document.getElementById("map"), {
+    map = await new google.maps.Map(document.getElementById("map"), {
         zoom: zoom,
         center: center,
         mapTypeId: "satellite",
         tilt: 0,
     });
-    heatmap = new google.maps.visualization.HeatmapLayer({
-        data: pointsToGoogleLatLng(points),
-        map: map,
-    });
+
     enableHeatmap(false);
     document
         .getElementById("enable-logging")
@@ -62,13 +59,21 @@ function changeDisplayType() {
 function enableHeatmap(enable) {
     let heatmapPanel = document.getElementById("floating-heatmap-panel");
     if (enable) {
+        if (!heatmap) {
+            heatmap = new google.maps.visualization.HeatmapLayer({
+                data: pointsToGoogleLatLng(points),
+                map: map,
+            });
+        }
         heatmapPanel.style.visibility = 'visible';
         heatmapPanel.offsetWidth;
         heatmap.setMap(map);
     } else {
         heatmapPanel.style.visibility = 'hidden';
         heatmapPanel.offsetWidth;
-        heatmap.setMap(null);
+        if (map && heatmap) {
+            heatmap.setMap(null);
+        }
     }
 }
 
@@ -114,13 +119,13 @@ async function enableLogging(enable) {
     let sessionNameField = document.getElementById('session-name');
     if (enable) {
         let promptString = 'Enter the name for this session';
-        var logName = prompt(promptString, "");
-        if (logName) {
+        var sessionName = prompt(promptString, "");
+        if (sessionName) {
             button.style.backgroundColor = "red";
             button.innerHTML = 'Stop logging';
-            sessionNameField.innerHTML = logName;
+            sessionNameField.innerHTML = sessionName;
         }
-        await serverStartLogging(logName);
+        await serverStartLogging(sessionName);
     } else {
         button.style.backgroundColor = "green";
         button.innerHTML = 'Start logging';
@@ -153,7 +158,7 @@ async function getServerData() {
     return serverJSON;
 }
 
-async function serverStartLogging(logName) {
+async function serverStartLogging(sessionName) {
     const response = await fetch('logging', {
         method: 'POST',
         headers: {
@@ -161,7 +166,7 @@ async function serverStartLogging(logName) {
         },
         body: JSON.stringify({ 
             logging: true,
-            logName: logName 
+            sessionName: sessionName 
         }) 
     });
     return response;
@@ -182,12 +187,14 @@ async function serverStopLogging() {
 
 function pointsToGoogleLatLng(points) {
     let result = [];
-    points.forEach(point => {
-        let lat = point.lat
-        let lng = point.lng
-        let googleLatLng = new google.maps.LatLng(lat, lng)
-        result.push(googleLatLng)
-    }); 
+    if (typeof(points) != "undefined") {
+        points.forEach(point => {
+            let lat = point.lat
+            let lng = point.lng
+            let googleLatLng = new google.maps.LatLng(lat, lng)
+            result.push(googleLatLng)
+        }); 
+    }
     return result;
 }
 

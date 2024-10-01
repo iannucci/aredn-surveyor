@@ -18,8 +18,11 @@ class Collector():
         Accesses the node's WiFi survey page, scrapes it, and
         returns a dictionary of the surveyed stations
         '''
-        url = 'http://%s/cgi-bin/scan' % (self.host,)
-        html = requests.get(url, auth=(self.username, self.password))
+        url = 'http://%s/cgi-bin/scan?rescan=1' % (self.host,)
+        headers = {
+            "Cache-Control": "no-cache"
+        }
+        html = requests.get(url, headers=headers, auth=(self.username, self.password))
         soup = BeautifulSoup(html.text, 'html.parser')
         tables = pd.read_html(StringIO(str(soup)))
         table = tables[0].transpose().to_dict()

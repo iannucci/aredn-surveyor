@@ -17,6 +17,7 @@ class Logger():
         self.databasePath = databasePath
         self.connection = None
         self.cursor = None
+        self.uniqueSessionName = None
         
     # Should only be called internally
     def _connect(self):
@@ -34,6 +35,37 @@ class Logger():
             self.connection.close()
         self.connection = None
         self.cursor = None
+        
+    def createSession(self, sessionName):
+        startTime = time.time()
+        self.uniqueSessionName = '[%d] %s' % (startTime, sessionName)
+        insertStatement = 'INSERT INTO Sessions ('\
+            'Session_Name, '\
+            'Start_Time, '\
+            'Stop_Time ) '\
+            'VALUES ("%s", %d, %d)' % (self.uniqueSessionName, startTime, startTime)
+        try:
+            if self.connection is None:
+                self._connect()
+            self.cursor.execute(insertStatement)
+            self.connection.commit()
+        except Exception as e:
+            debugLog('[logger] startSession() failed: %s', (e,))
+            self._disconnect()
+            
+    def updateSessionStopTime(self, time):
+        if self.uniqueSessionName is not None:
+            updateStatement = 'UPDATE Sessions '\
+                'SET Stop_Time = %d '\
+                'WHERE Session_Name = "%s"' % (time, self.uniqueSessionName)
+            try:
+                if self.connection is None:
+                    self._connect()
+                self.cursor.execute(updateStatement)
+                self.connection.commit()
+            except Exception as e:
+                debugLog('[logger] updateSessionStopTime() failed: %s', (e,))
+                self._disconnect()
         
     # **FIXME** Need an input queue that provides access to this method
     def log(self, nodeName, nodeMAC, nodeMode, ssid, snr, signal, channel, latitude, longitude, antenna, mounting):

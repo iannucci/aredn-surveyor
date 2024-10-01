@@ -19,7 +19,7 @@ config.read(configPath)
 
 dbPath = config['database']['databasePath']
 
-sqlString = 'CREATE TABLE "Readings" ( '\
+sqlStringReadingsTable = 'CREATE TABLE "Readings" ( '\
 	'"Index"	INTEGER, '\
 	'"Node_Name"	TEXT, '\
 	'"Node_MAC_Address"	TEXT, '\
@@ -34,7 +34,14 @@ sqlString = 'CREATE TABLE "Readings" ( '\
 	'"Receiver_Antenna"	TEXT, '\
 	'"Receiver_Mounting"	TEXT, '\
 	'PRIMARY KEY("Index" AUTOINCREMENT))'
-
+ 
+ 
+sqlStringSessionsTable = 'CREATE TABLE "Sessions" ( '\
+	'"Index"	INTEGER, '\
+	'"Session_Name"	TEXT, '\
+	'"Start_Time"	INTEGER, '\
+    '"Stop_Time"	INTEGER, '\
+	'PRIMARY KEY("Index" AUTOINCREMENT))'
 
 def create_sqlite_database(dbFilePath):
     conn = None
@@ -55,4 +62,5 @@ def create_sqlite_table(dbFilePath, sqlString):
     connection_obj.close()
 
 create_sqlite_database(dbPath)
-create_sqlite_table(dbPath, sqlString)
+create_sqlite_table(dbPath, sqlStringReadingsTable)
+create_sqlite_table(dbPath, sqlStringSessionsTable)

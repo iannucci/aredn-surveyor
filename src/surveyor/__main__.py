@@ -60,6 +60,14 @@ class Surveyor():
         self.wesbserverThread.join()
         self.logger._disconnect()
         
+    def startSession(self, sessionName):
+        self.sessionName = sessionName
+        self.logger.createSession(sessionName)
+        self.enabled = True
+        
+    def stopSession(self):
+        self.enabled = False
+        
     def loop(self):
         positionOfLastLogEntry = None
         prefix = self.config['aredn']['ssidPrefix']
@@ -103,10 +111,13 @@ class Surveyor():
                         self.logger.log('No signal', '', '', '', -100, -100, 0, position.latitude, position.longitude, self.config['receiver']['antenna'], self.config['receiver']['mounting'])
                     else:
                         debugLog("[main] Logged %d reading(s) matching '%s'", (nReadingsLogged, prefix,))
-                    
                     positionOfLastLogEntry = position
+                    # **FIXME** Update the session table stop time
+                    self.logger.updateSessionStopTime(time.time())
                 sleepSeconds = float(self.config['application']['secondsToSleepAfterLogging'])
                 time.sleep(sleepSeconds)
+            else:
+                self.sessionName = None
             sleepSeconds = float(self.config['application']['secondsToSleepWhileDisabled'])
             time.sleep(sleepSeconds)
 

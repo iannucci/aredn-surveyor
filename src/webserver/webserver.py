@@ -39,23 +39,25 @@ def logging():
     loggingEnabled = dataDict['logging']
     
     if loggingEnabled:
-        debugLog('[webserver] Logging: %s  to: %s', (str(loggingEnabled),dataDict['logName'],))
+        sessionName = dataDict['sessionName']
+        debugLog('[webserver] Logging: %s  to: %s', (str(loggingEnabled),sessionName,))
         if surveyor:
-            surveyor.enabled = True
+            surveyor.startSession(sessionName)
     else:
         debugLog('[webserver] Logging: %s', (str(loggingEnabled),))
         if surveyor:
-            surveyor.enabled = False
+            surveyor.stopSession()
     serverResponse = { 'response': True }
     return serverResponse
 
 @app.route('/heatmap-data')
 def heatmapData():
     # result = logger.query(nodeName=nodeName, nodeMAC=nodeMAC, ssid=ssid, channel=channel, startTime=startTime, stopTime=stopTime)
-    result = logger.query(startTime=1727560368, stopTime=1727560484)  #channel=175)
+    # result = logger.query(startTime=1727560368, stopTime=1727560484)  #channel=175)
+    result = logger.query()
     if (result == []):
         debugLog('[webserver] No points in the database match the query. Exiting.')
-        return None
+        return {}
     else:
         points = logger.databaseToPoints(result)
         bounds = mapHelper.boundingRectangle(points)
@@ -70,7 +72,6 @@ def heatmapData():
 def static_content(filename):
     return send_from_directory('www', filename)
 
-# def webserver():
 class Webserver():
     def __init__(self, main):
         global surveyor 
