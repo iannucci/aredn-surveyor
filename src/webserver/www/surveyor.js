@@ -4,17 +4,18 @@
 let map;
 let heatmap = null;
 let loggingEnabled = false;
+const { Map } = await google.maps.importLibrary("maps");
+const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
 
 async function initMap() {
-    const { Map } = await google.maps.importLibrary("maps");
-    const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+
     enableLogging(false);
     document
         .getElementById("enable-logging")
         .addEventListener("click", toggleLogging);
     document
         .getElementById("display-type")
-        .addEventListener("change", refreshData);
+        .addEventListener("change", refreshPointData);
     document
         .getElementById("change-gradient")
         .addEventListener("click", changeGradient);
@@ -25,75 +26,82 @@ async function initMap() {
         .getElementById("change-radius")
         .addEventListener("click", changeRadius);
     document
+        .getElementById("refresh-data")
+        .addEventListener("click", refreshPointData);
+    document
         .getElementById("start-time")
-        .addEventListener("change", serverStartTime);
+        .addEventListener("change.td", refreshPointData);
     document
         .getElementById("stop-time")
-        .addEventListener("change", serverStopTime);
-    let serverData = await serverGetPoints();
-    await refreshMap(Map, serverData);
-    await refreshData(AdvancedMarkerElement, serverData);
+        .addEventListener("change", refreshPointData);
+    await refreshPointData();
 }
 
-async function refreshMap(MapClass, serverData) {
-    let center = serverData.center;
-    let zoom = serverData.zoom;
-    map = await new MapClass(document.getElementById("map"), {
+async function refreshPointData() {
+    let pointData = await serverGetPoints();
+    let displayTypeDropdown = document.getElementById("display-type");
+    let displayTypeValue = displayTypeDropdown.options[displayTypeDropdown.selectedIndex].text;
+    let heatmapPanel = document.getElementById("floating-heatmap-panel");
+    let pointList = pointData.points;
+    let center = pointData.center;
+    let zoom = pointData.zoom;
+    map = await new Map(document.getElementById("map"), {
         zoom: zoom,
         center: center,
         mapTypeId: 'satellite',
         tilt: 0,
         mapId: '2b79a6cc78f5307a'
     });
-}
-
-function refreshData(MarkerClass, serverData) {
-    let displayTypeDropdown = document.getElementById("display-type");
-    let displayTypeValue = displayTypeDropdown.options[displayTypeDropdown.selectedIndex].text;
-    let heatmapPanel = document.getElementById("floating-heatmap-panel");
-    let points = serverData.points;
-    switch (displayTypeValue) {
-        case 'Points':
-            points.forEach(point => {
-                new MarkerClass({
-                    position: point,
-                    map: map
+    if (typeof pointList !== 'undefined') {
+        switch (displayTypeValue) {
+            case 'Points':
+                if (typeof pointList !== 'undefined') {
+                    pointList.forEach((point) => {
+                        new AdvancedMarkerElement({
+                            position: point,
+                            map: map
+                        });
+                    });
+                    heatmapPanel.style.visibility = 'hidden';
+                    if (map && heatmap) {
+                        heatmap.setMap(null);
+                    }
+                }
+                break;
+            case 'Signal strength':
+                heatmapPanel.style.visibility = 'hidden';
+                if (map && heatmap) {
+                    heatmap.setMap(null);
+                }
+                break;
+            case 'Heatmap':
+                let googlePointList = await pointsToGoogleLatLng(pointList);
+                heatmap = await new google.maps.visualization.HeatmapLayer({
+                    data: googlePointList
                 });
-            });
-            heatmapPanel.style.visibility = 'hidden';
-            if (map && heatmap) {
-                heatmap.setMap(null);
-            }
-            break;
-        case 'Signal strength':
-            heatmapPanel.style.visibility = 'hidden';
-            if (map && heatmap) {
-                heatmap.setMap(null);
-            }
-            break;
-        case 'Heatmap':
-            heatmap = new google.maps.visualization.HeatmapLayer({
-                // data: pointsToGoogleLatLng(points),
-                data: points,
-                map: map,
-            });
-            heatmapPanel.style.visibility = 'visible';
-            heatmap.setMap(map);
-            break;
-        default:
-            break;
+                heatmapPanel.style.visibility = 'visible';
+                heatmap.setMap(map);
+                break;
+            default:
+                break;
+        }
     }
 }
 
-function pointsToGoogleLatLng(points) {
-    // pattern: new google.maps.LatLng(37.751266, -122.403355)
-    let result = [];
-    for (point in points) {
+
+async function pointsToGoogleLatLng(points) {
+    let result = points.map(point => {
         let lat = point['lat'];
         let lng = point['lng'];
-        let googleLatLng = 'new google.maps.LatLng(${lat}, ${lng})';
-        result.push(googleLatLng)
-    }
+        return new google.maps.LatLng(lat, lng);
+    });
+    // let result = [];
+    // for (let point in points) {
+    //     let lat = point['lat'];
+    //     let lng = point['lng'];
+    //     let googleLatLng = new google.maps.LatLng(lat, lng);
+    //     result.push(googleLatLng)
+    // }
     return result
 }
 
@@ -164,7 +172,30 @@ function toggleLogging() {
 // --------------------------------------
 
 async function serverGetPoints() {
-    let serverResponse = await fetch('point-data');
+    let startTime;
+    let stopTime;
+    let startTimeField = document.getElementById("start-time");
+    if (startTimeField.value == '') {
+        startTime = Math.round( Date.now() / 1000 );
+    } else {
+        startTime = Math.round( Date.parse(startTimeField.value) / 1000 );
+    }
+    let stopTimeField = document.getElementById("stop-time");
+    if (stopTimeField.value == '') {
+        stopTime = Math.round( Date.now() / 1000 );
+    } else {
+        stopTime = Math.round( Date.parse(stopTimeField.value) / 1000 );
+    }
+    let serverResponse = await fetch('point-data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            startTime: startTime,
+            stopTime: stopTime
+        })
+    });
     let serverJSON = serverResponse.json();
     return serverJSON;
 }
@@ -175,10 +206,10 @@ async function serverStartLogging(sessionName) {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
             logging: true,
-            sessionName: sessionName 
-        }) 
+            sessionName: sessionName
+        })
     });
     return response;
 }
@@ -189,42 +220,42 @@ async function serverStopLogging() {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
-            logging: false 
+        body: JSON.stringify({
+            logging: false
         })
     });
     return response;
 }
 
-async function serverStartTime(time) {
-    let button = document.getElementById("start-time");
-    let startDate = button.innerHTML;
-    const response = await fetch('logging', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            startTime: time
-        })
-    });
-    return response;
-}
+// async function serverStartTime(time) {
+//     let button = document.getElementById("start-time");
+//     let startDate = button.innerHTML;
+//     const response = await fetch('logging', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json'
+//         },
+//         body: JSON.stringify({
+//             startTime: time
+//         })
+//     });
+//     return response;
+// }
 
-async function serverStopTime(time) {
-    let button = document.getElementById("stop-time");
-    let startDate = button.innerHTML;
-    const response = await fetch('logging', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            stopTime: time
-        })
-    });
-    return response;
-}
+// async function serverStopTime(time) {
+//     let button = document.getElementById("stop-time");
+//     let startDate = button.innerHTML;
+//     const response = await fetch('logging', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json'
+//         },
+//         body: JSON.stringify({
+//             stopTime: time
+//         })
+//     });
+//     return response;
+// }
 
 // window.initMap = initMap;
 initMap();

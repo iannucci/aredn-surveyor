@@ -95,7 +95,7 @@ class Logger():
     # **FIXME** Need an input queue that provides access to this method   
     def query(self, nodeName=None, nodeMAC=None, ssid=None, channel=None, startTime=None, stopTime=None):
         priorWhere = False
-        selectStatement = 'SELECT * FROM Readings '
+        selectStatement = 'SELECT * FROM Readings'
         if (nodeName is not None):
             selectStatement += ' WHERE Node_Name = "%s"' % (nodeName,)
             priorWhere = True
@@ -119,9 +119,9 @@ class Logger():
                 priorWhere = True
         if (startTime is not None) and (stopTime is not None):
             if (priorWhere):
-                selectStatement += ' AND TIME >= %s AND TIME <= %s' % (startTime, stopTime,)
+                selectStatement += ' AND Time >= %s AND Time <= %s' % (startTime, stopTime,)
             else:
-                selectStatement += ' WHERE TIME >= %s AND TIME <= %s' % (startTime, stopTime,)
+                selectStatement += ' WHERE Time >= %s AND Time <= %s' % (startTime, stopTime,)
         try:
             if self.connection is None:
                 self._connect()

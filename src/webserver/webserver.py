@@ -44,10 +44,10 @@ def logging():
         match key:
             case 'logging':
                 pass
-            case 'startTime':
-                invalid = not validUTC(value)
-            case 'stopTime':
-                invalid = not validUTC(value) or (value <= surveyor.startTime)
+            # case 'startTime':
+            #     invalid = not validUTC(value)
+            # case 'stopTime':
+            #     invalid = not validUTC(value) or (value <= surveyor.startTime)
             case _:
                 invalid = True
                 
@@ -63,10 +63,10 @@ def logging():
                         surveyor.startSession(sessionName)
                     else:
                         surveyor.stopSession()
-                case 'startTime':
-                    surveyor.startTime = value
-                case 'stopTime':
-                    surveyor.stopTime = value
+                # case 'startTime':
+                #     surveyor.startTime = value
+                # case 'stopTime':
+                #     surveyor.stopTime = value
     return { 'valid': True }
 
 # @app.route('/heatmap-data')
@@ -86,19 +86,39 @@ def logging():
 #     # debugLog('[webserver] Replying to client with %s', (serverResponse,))
 #     return serverResponse
 
-@app.route('/point-data')
+@app.route('/point-data', methods=['POST'])
 def pointData():
-    result = logger.query(startTime = surveyor.startTime, stopTime = surveyor.stopTime)
+    validStart = False
+    validStop = False
+    dataDict = request.json
+    for key, value in dataDict.items():
+        match key:
+            case 'startTime':
+                if validUTC(value):
+                    startTime = value
+                    validStart = True
+            case 'stopTime':
+                if validUTC(value):
+                    stopTime = value
+                    validStop = True
+    if (not validStart) or (not validStop) or (startTime > stopTime):
+        return { 'valid': False }
+    result = logger.query(startTime = startTime, stopTime = stopTime)
     if (result == []):
-        debugLog('[webserver] No points in the database match the query. Exiting.')
-        return {}
+        debugLog('[webserver] No points in the database match the query.')
+        points = []
+        latitude = float(config['map']['defaultCenterLatitude'])
+        longitude = float(config['map']['defaultCenterLongitude'])
+        zoomLevel = int(config['map']['defaultZoomLevel'])
+        center = { 'lat': latitude, 'lng': longitude }
+        serverResponse = { 'center': center, 'zoom': zoomLevel, 'points': points }
     else:
         points = logger.databaseToPoints(result)
         bounds = mapHelper.boundingRectangle(points)
         mapDimPixels = { 'height': 1000, 'width': 800 }
         mapSettings = mapHelper.boundsToCenterZoom(bounds, mapDimPixels)
         serverResponse = { 'center': mapSettings['center'], 'zoom': mapSettings['zoom'] , 'points': points }
-        debugLog('[webserver] Responding to /point-data request with %d point(s)', (len(points),))
+    debugLog('[webserver] Responding to /point-data request with %d point(s)', (len(points),))
     return serverResponse
 
 # css and js files, among others, are served via this rule

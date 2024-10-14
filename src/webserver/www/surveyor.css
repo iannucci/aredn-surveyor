@@ -34,20 +34,10 @@ body {
     display: inline-block;
 }
 
-#floating-control-panel {
-    background-color: #fff;
-    border: 1px solid #999;
-    left: 25%;
-    padding: 5px;
-    position: absolute;
-    top: 10px;
-    z-index: 5;
-}
-
 #floating-heatmap-panel {
     position: absolute;
     top: 10px;
-    left: 25%;
+    left: 50%;
     z-index: 5;
     background-color: #fff;
     padding: 5px;
@@ -57,16 +47,6 @@ body {
     line-height: 30px;
     padding-left: 10px;
     visibility: hidden;
-}
-
-#floating-heatmap-panel {
-    background-color: #fff;
-    border: 1px solid #999;
-    left: 25%;
-    padding: 5px;
-    position: absolute;
-    top: 60px;
-    z-index: 5;
 }
 
 #session-name {
