@@ -13,6 +13,7 @@ moduleDir = '%s/src' % projectDir
 configFilePath = '%s/config/config.ini' % projectDir
 sys.path.append(os.fspath(projectDir))
 surveyor = None
+sessionName = ''
 
 config = c.ConfigParser()
 config.read(configFilePath)
@@ -35,6 +36,7 @@ def surveyor():
 @app.route('/logging', methods=['POST'])
 def logging():
     global surveyor
+    global sessionName
     dataDict = request.json
     # We make two passes over the dataDict:
     #   the first pass only checks for validity
@@ -44,10 +46,6 @@ def logging():
         match key:
             case 'logging':
                 pass
-            # case 'startTime':
-            #     invalid = not validUTC(value)
-            # case 'stopTime':
-            #     invalid = not validUTC(value) or (value <= surveyor.startTime)
             case _:
                 invalid = True
                 
@@ -57,34 +55,26 @@ def logging():
         for key, value in dataDict.items():
             match key:
                 case 'logging':
-                    loggingEnabled = value
-                    if loggingEnabled:
-                        sessionName = dataDict['sessionName']
-                        surveyor.startSession(sessionName)
-                    else:
-                        surveyor.stopSession()
-                # case 'startTime':
-                #     surveyor.startTime = value
-                # case 'stopTime':
-                #     surveyor.stopTime = value
-    return { 'valid': True }
-
-# @app.route('/heatmap-data')
-# def heatmapData():
-#     # result = logger.query(nodeName=nodeName, nodeMAC=nodeMAC, ssid=ssid, channel=channel, startTime=startTime, stopTime=stopTime)
-#     # result = logger.query(startTime=1727560368, stopTime=1727560484)  #channel=175)
-#     result = logger.query(startTime = surveyor.startTime, stopTime = surveyor.stopTime)
-#     if (result == []):
-#         debugLog('[webserver] No points in the database match the query. Exiting.')
-#         return {}
-#     else:
-#         points = logger.databaseToPoints(result)
-#         bounds = mapHelper.boundingRectangle(points)
-#         mapDimPixels = { 'height': 1000, 'width': 800 }
-#         mapSettings = mapHelper.boundsToCenterZoom(bounds, mapDimPixels)
-#         serverResponse = { 'center': mapSettings['center'], 'zoom': mapSettings['zoom'] , 'points': points }
-#     # debugLog('[webserver] Replying to client with %s', (serverResponse,))
-#     return serverResponse
+                    match value:
+                        case 'stop':
+                            loggingEnabled = False
+                            surveyor.stopSession()
+                            sessionName = ''
+                            return { 'valid': True }
+                        case 'query':
+                            return { 'valid': True,
+                                    'sessionName': sessionName }
+                        case _:
+                            # Maybe 'start' case -- look for sessionName
+                            if ('sessionName' in value):
+                                loggingEnabled = True
+                                sessionName = value['sessionName']
+                                surveyor.startSession(sessionName)
+                                return { 'valid': True }
+                            else:
+                                return { 'valid': False }
+                case _:
+                    return { 'valid': False }
 
 @app.route('/point-data', methods=['POST'])
 def pointData():

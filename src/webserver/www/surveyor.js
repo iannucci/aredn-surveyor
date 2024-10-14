@@ -4,12 +4,11 @@
 let map;
 let heatmap = null;
 let loggingEnabled = false;
+let markers;
 const { Map } = await google.maps.importLibrary("maps");
 const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
 
 async function initMap() {
-
-    enableLogging(false);
     document
         .getElementById("enable-logging")
         .addEventListener("click", toggleLogging);
@@ -34,10 +33,44 @@ async function initMap() {
     document
         .getElementById("stop-time")
         .addEventListener("change", refreshPointData);
+    map = await new Map(document.getElementById("map"), {
+        mapTypeId: 'satellite',
+        tilt: 0,
+        mapId: '2b79a6cc78f5307a'
+    });
+    checkInProcessSession();
+    markers = [];
     await refreshPointData();
 }
 
+async function checkInProcessSession() {
+    // The state of the logging operation is held in the server, not the client.
+    //
+    // Query the server and update the UI accordingly
+    let sessionName = await serverSessionName();
+    let button = document.getElementById("enable-logging");
+    if (sessionName != '') {
+        button.style.backgroundColor = "red";
+        button.innerHTML = sessionName;
+        loggingEnabled = true;
+    } else {
+        button.style.backgroundColor = "green";
+        button.innerHTML = 'Start logging';
+        loggingEnabled = false;
+    }
+}
+
+function clearMarkers() {
+    if (markers != []) {
+        markers.map(marker => {
+            marker.setMap(null);
+        });
+        markers = [];
+    }
+}
+
 async function refreshPointData() {
+    clearMarkers();
     let pointData = await serverGetPoints();
     let displayTypeDropdown = document.getElementById("display-type");
     let displayTypeValue = displayTypeDropdown.options[displayTypeDropdown.selectedIndex].text;
@@ -45,22 +78,18 @@ async function refreshPointData() {
     let pointList = pointData.points;
     let center = pointData.center;
     let zoom = pointData.zoom;
-    map = await new Map(document.getElementById("map"), {
-        zoom: zoom,
-        center: center,
-        mapTypeId: 'satellite',
-        tilt: 0,
-        mapId: '2b79a6cc78f5307a'
-    });
+    map.setCenter(center);
+    map.setZoom(zoom);
     if (typeof pointList !== 'undefined') {
         switch (displayTypeValue) {
             case 'Points':
                 if (typeof pointList !== 'undefined') {
                     pointList.forEach((point) => {
-                        new AdvancedMarkerElement({
+                        let newMarker = new AdvancedMarkerElement({
                             position: point,
                             map: map
                         });
+                        markers.push(newMarker);
                     });
                     heatmapPanel.style.visibility = 'hidden';
                     if (map && heatmap) {
@@ -75,6 +104,10 @@ async function refreshPointData() {
                 }
                 break;
             case 'Heatmap':
+                if (heatmap !== null) {
+                    heatmap.setMap(null);
+                    heatmap = null;
+                }
                 let googlePointList = await pointsToGoogleLatLng(pointList);
                 heatmap = await new google.maps.visualization.HeatmapLayer({
                     data: googlePointList
@@ -95,13 +128,6 @@ async function pointsToGoogleLatLng(points) {
         let lng = point['lng'];
         return new google.maps.LatLng(lat, lng);
     });
-    // let result = [];
-    // for (let point in points) {
-    //     let lat = point['lat'];
-    //     let lng = point['lng'];
-    //     let googleLatLng = new google.maps.LatLng(lat, lng);
-    //     result.push(googleLatLng)
-    // }
     return result
 }
 
@@ -150,17 +176,16 @@ async function enableLogging(enable) {
         var sessionName = prompt(promptString, "");
         if (sessionName) {
             button.style.backgroundColor = "red";
-            button.innerHTML = 'Stop logging';
-            sessionNameField.innerHTML = sessionName;
+            button.innerHTML = sessionName;
+            await serverStartLogging(sessionName);
+            loggingEnabled = true;
         }
-        await serverStartLogging(sessionName);
     } else {
         button.style.backgroundColor = "green";
         button.innerHTML = 'Start logging';
-        sessionNameField.innerHTML = '';
         await serverStopLogging();
+        loggingEnabled = false;
     }
-    loggingEnabled = enable;
 }
 
 function toggleLogging() {
@@ -172,90 +197,96 @@ function toggleLogging() {
 // --------------------------------------
 
 async function serverGetPoints() {
-    let startTime;
-    let stopTime;
-    let startTimeField = document.getElementById("start-time");
-    if (startTimeField.value == '') {
-        startTime = Math.round( Date.now() / 1000 );
-    } else {
-        startTime = Math.round( Date.parse(startTimeField.value) / 1000 );
+    let serverJSON;
+    try {
+        let startTime;
+        let stopTime;
+        let startTimeField = document.getElementById("start-time");
+        if (startTimeField.value == '') {
+            startTime = Math.round(Date.now() / 1000);
+        } else {
+            startTime = Math.round(Date.parse(startTimeField.value) / 1000);
+        }
+        let stopTimeField = document.getElementById("stop-time");
+        if (stopTimeField.value == '') {
+            stopTime = Math.round(Date.now() / 1000);
+        } else {
+            stopTime = Math.round(Date.parse(stopTimeField.value) / 1000);
+        }
+        let serverResponse = await fetch('point-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                startTime: startTime,
+                stopTime: stopTime
+            })
+        });
+        serverJSON = serverResponse.json();
+    } catch (error) {
+        console.error(error.message);
     }
-    let stopTimeField = document.getElementById("stop-time");
-    if (stopTimeField.value == '') {
-        stopTime = Math.round( Date.now() / 1000 );
-    } else {
-        stopTime = Math.round( Date.parse(stopTimeField.value) / 1000 );
-    }
-    let serverResponse = await fetch('point-data', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            startTime: startTime,
-            stopTime: stopTime
-        })
-    });
-    let serverJSON = serverResponse.json();
     return serverJSON;
 }
 
 async function serverStartLogging(sessionName) {
-    const response = await fetch('logging', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            logging: true,
-            sessionName: sessionName
-        })
-    });
-    return response;
+    let serverJSON;
+    try {
+        const response = await fetch('logging', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                logging: {
+                    sessionName: sessionName
+                }
+            })
+        });
+        serverJSON = await response.json();
+    } catch (error) {
+        console.error(error.message);
+    }
+    return serverJSON;
 }
 
 async function serverStopLogging() {
-    const response = await fetch('logging', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            logging: false
-        })
-    });
-    return response;
+    let serverJSON;
+    try {
+        const response = await fetch('logging', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                logging: stop
+            })
+        });
+        serverJSON = await response.json();
+    } catch (error) {
+        console.error(error.message);
+    }
+    return serverJSON;
 }
 
-// async function serverStartTime(time) {
-//     let button = document.getElementById("start-time");
-//     let startDate = button.innerHTML;
-//     const response = await fetch('logging', {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/json'
-//         },
-//         body: JSON.stringify({
-//             startTime: time
-//         })
-//     });
-//     return response;
-// }
+async function serverSessionName() {
+    let serverJSON;
+    try {
+        const response = await fetch('logging', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                logging: 'query'
+            })
+        });
+        serverJSON = await response.json();
+        return serverJSON.sessionName;
+    } catch (error) {
+        console.error(error.message);
+    }
+}
 
-// async function serverStopTime(time) {
-//     let button = document.getElementById("stop-time");
-//     let startDate = button.innerHTML;
-//     const response = await fetch('logging', {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/json'
-//         },
-//         body: JSON.stringify({
-//             stopTime: time
-//         })
-//     });
-//     return response;
-// }
-
-// window.initMap = initMap;
 initMap();
